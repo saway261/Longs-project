@@ -1,10 +1,5 @@
-import { Suspense } from "react"
-import { HomeClient } from "@/components/home-client"
+import { redirect } from "next/navigation"
 
 export default function Home() {
-  return (
-    <Suspense fallback={<div className="flex h-screen bg-background" />}>
-      <HomeClient />
-    </Suspense>
-  )
+  redirect("/design/pop")
 }
