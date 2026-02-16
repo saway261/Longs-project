@@ -9,7 +9,7 @@ export const prisma =
   new PrismaClient({
     log:
       process.env.NODE_ENV === "development"
-        ? ["query", "error", "warn"]
+        ? ["error", "warn"] // クエリログを非表示（開発中も静かに）
         : ["error"],
   });
 

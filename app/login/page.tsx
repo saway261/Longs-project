@@ -2,14 +2,15 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useState, type FormEvent } from "react"
+import { useState, type FormEvent, useTransition } from "react"
 import { CalendarClock, Lock, ShieldCheck, Smartphone, ArrowRight } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
-import { Badge } from "@/components/ui/badge" 
+import { Badge } from "@/components/ui/badge"
+import { loginAction } from "@/src/actions/auth-actions" 
  
 const highlights = [
   { title: "年間/月次ガント", icon: CalendarClock, description: "当月払いや翌々月15日払いなどのサイトを一目管理" },
@@ -20,16 +21,31 @@ const highlights = [
 
 export default function LoginPage() {
   const router = useRouter()
-  const [loading, setLoading] = useState(false)
+  const [isPending, startTransition] = useTransition()
   const [rememberMe, setRememberMe] = useState(true)
+  const [error, setError] = useState<string>("")
 
-  const handleLogin = (event: FormEvent) => {
+  const handleLogin = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setLoading(true)
-    setTimeout(() => {
-      router.push("/")
-      setLoading(false)
-    }, 400)
+    setError("")
+
+    // フォームデータを取得
+    const formData = new FormData(event.currentTarget)
+    const email = formData.get("email") as string
+    const password = formData.get("password") as string
+
+    // Server Action呼び出し
+    startTransition(async () => {
+      const result = await loginAction({ email, password })
+
+      if (result.success) {
+        // ログイン成功 → デザインスタジオへ
+        router.push("/design/pop")
+      } else {
+        // ログイン失敗 → エラー表示
+        setError(result.error)
+      }
+    })
   }
 
   return (
@@ -72,13 +88,32 @@ export default function LoginPage() {
           </CardHeader>
           <CardContent>
             <form className="space-y-4" onSubmit={handleLogin}>
+              {error && (
+                <div className="text-sm text-red-600 bg-red-50 p-3 rounded">
+                  {error}
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="email">メールアドレス</Label>
-                <Input id="email" type="email" placeholder="demo@apparel.jp" required defaultValue="owner@apparel.jp" />
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="demo@apparel.jp"
+                  required
+                  defaultValue="owner@apparel.jp"
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">パスワード</Label>
-                <Input id="password" type="password" placeholder="••••••••" required defaultValue="demopass" />
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  placeholder="••••••••"
+                  required
+                  defaultValue="demopass"
+                />
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -97,9 +132,9 @@ export default function LoginPage() {
                 <Button
                   type="submit"
                   className="w-full gap-2 bg-[#345fe1] hover:bg-[#2a4bb3] text-white"
-                  disabled={loading}
+                  disabled={isPending}
                 >
-                  {loading ? "ログイン中..." : "ログイン"}
+                  {isPending ? "ログイン中..." : "ログイン"}
                   <ArrowRight className="w-4 h-4" />
                 </Button>
               </div>

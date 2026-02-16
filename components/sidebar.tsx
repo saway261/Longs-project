@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useRouter, usePathname } from "next/navigation"
+import { logoutAction } from "@/src/actions/auth-actions"
 import {
   Palette,
   Package,
@@ -92,6 +93,7 @@ export function Sidebar() {
 
   const [expandedSections, setExpandedSections] = useState<SectionId[]>([activeSection])
   const [isHovering, setIsHovering] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   const toggleExpand = (section: SectionId) => {
     setExpandedSections((prev) => (prev.includes(section) ? prev.filter((s) => s !== section) : [...prev, section]))
@@ -110,8 +112,24 @@ export function Sidebar() {
     router.push("/settings")
   }
 
-  const handleLogout = () => {
-    router.push("/login")
+  const handleLogout = async () => {
+    setIsLoggingOut(true)
+    try {
+      const result = await logoutAction()
+      if (result.success) {
+        router.push("/login")
+        router.refresh() // セッション情報をクリア
+      } else {
+        console.error("ログアウト失敗:", result.error)
+        // エラー時は最低限ログインページへ遷移
+        router.push("/login")
+      }
+    } catch (error) {
+      console.error("ログアウト処理でエラー:", error)
+      router.push("/login")
+    } finally {
+      setIsLoggingOut(false)
+    }
   }
 
   return (
@@ -261,9 +279,18 @@ export function Sidebar() {
             </div>
             <button
               onClick={handleLogout}
-              className="p-2 rounded-lg hover:bg-sidebar-accent transition-colors hidden group-hover/sidebar:inline-flex"
+              disabled={isLoggingOut}
+              className={cn(
+                "p-2 rounded-lg transition-colors hidden group-hover/sidebar:inline-flex",
+                isLoggingOut
+                  ? "bg-sidebar-accent/50 cursor-not-allowed"
+                  : "hover:bg-sidebar-accent"
+              )}
             >
-              <LogOut className="w-4 h-4 text-sidebar-foreground/60" />
+              <LogOut className={cn(
+                "w-4 h-4",
+                isLoggingOut ? "text-sidebar-foreground/30" : "text-sidebar-foreground/60"
+              )} />
             </button>
           </div>
         </div>
