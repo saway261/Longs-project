@@ -1,0 +1,18 @@
+{
+  "name": "longs-project",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/app",
+  "remoteEnv": {
+    "CLAUDE_CONFIG_DIR": "/claude"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "prisma.prisma",
+        "ms-azuretools.vscode-docker"
+      ]
+    }
+  }
+}

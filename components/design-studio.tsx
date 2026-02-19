@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useMemo, useEffect, useCallback } from "react"
 import {
   Upload,
   Sparkles,
@@ -15,6 +15,7 @@ import {
   Type,
   Crop,
   ImagePlus,
+  Code,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -23,6 +24,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
+import {
+  generateDesignImageAction,
+  getDesignAssetsAction,
+  deleteDesignAssetAction,
+} from "@/src/actions/design-actions"
+import { toast } from "sonner"
 
 interface DesignStudioProps {
   initialType?: "pop" | "poster"
@@ -67,6 +74,15 @@ const isLightColor = (hex: string) => {
   const b = parseInt(full.slice(4, 6), 16)
   const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
   return luminance > 0.6
+}
+
+const styleMapEN: Record<string, string> = {
+  modern: "modern minimalist design, clean lines, geometric shapes",
+  retro: "retro vintage design, nostalgic colors, classic typography",
+  street: "street urban design, graffiti style, bold graphics",
+  elegant: "elegant luxury design, sophisticated, refined aesthetics",
+  casual: "casual friendly design, warm, approachable",
+  sporty: "sporty dynamic design, energetic, athletic vibe",
 }
 
 const styles = [
@@ -116,56 +132,6 @@ const historyDateRanges: { id: HistoryDateRange; label: string }[] = [
 const parseHistoryDate = (value: string) => new Date(value.replace(" ", "T"))
 
 
-const historyData = [
-  {
-    id: 1,
-    type: "pop",
-    title: "春セールPOP",
-    createdAt: "2024-04-15 14:30",
-    image: "/apparel-fashion-sale-promotional-poster-design.jpg",
-    style: "モダン",
-  },
-  {
-    id: 2,
-    type: "poster",
-    title: "新作コレクション",
-    createdAt: "2024-04-14 10:15",
-    image: "/fashion-poster-summer-collection.jpg",
-    style: "エレガント",
-  },
-  {
-    id: 3,
-    type: "pop",
-    title: "会員限定セール",
-    createdAt: "2024-04-13 16:45",
-    image: "/members-only-sale-pop.jpg",
-    style: "カジュアル",
-  },
-  {
-    id: 4,
-    type: "poster",
-    title: "夏物先行販売",
-    createdAt: "2024-04-12 09:00",
-    image: "/summer-pre-sale-poster.jpg",
-    style: "ストリート",
-  },
-  {
-    id: 5,
-    type: "pop",
-    title: "タイムセール",
-    createdAt: "2024-04-11 13:20",
-    image: "/time-sale-pop-design.jpg",
-    style: "レトロ",
-  },
-  {
-    id: 6,
-    type: "poster",
-    title: "ブランドフェア",
-    createdAt: "2024-04-10 11:00",
-    image: "/brand-fair-poster.jpg",
-    style: "モダン",
-  },
-]
 
 export function DesignStudio({ initialType, showHistory = false }: DesignStudioProps) {
   const [selectedColor, setSelectedColor] = useState("")
@@ -182,44 +148,218 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
   const [isPopModalOpen, setIsPopModalOpen] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedImage, setGeneratedImage] = useState<string | null>(null)
-  const [uploadedImage, setUploadedImage] = useState<string | null>(null)
+  const [uploadedImages, setUploadedImages] = useState<
+    Array<{ base64: string; mimeType: string; preview: string }>
+  >([])
+  const [historyItems, setHistoryItems] = useState<
+    Array<{ id: string; type: string; title: string; createdAt: string; image: string; style: string }>
+  >([])
   const [historyStyleFilter, setHistoryStyleFilter] = useState<string>("all")
   const [historyDateRange, setHistoryDateRange] = useState<HistoryDateRange>("all")
   const [historyYear, setHistoryYear] = useState<number | null>(null)
   const [historyTitleQuery, setHistoryTitleQuery] = useState("")
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const promptRef = useRef<HTMLTextAreaElement>(null)
 
-  const handleGenerate = () => {
+  // 履歴データ取得
+  const fetchHistory = useCallback(async () => {
+    const result = await getDesignAssetsAction()
+    if (result.success) {
+      setHistoryItems(
+        result.data.map((asset) => ({
+          id: asset.id,
+          type: asset.type,
+          title: asset.title || "無題",
+          createdAt: asset.createdAt.replace("T", " ").slice(0, 16),
+          image: asset.imageUrl || "",
+          style: asset.style || "未設定",
+        }))
+      )
+    } else {
+      toast.error(`履歴の取得に失敗しました: ${result.error}`)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (showHistory) {
+      fetchHistory()
+    }
+  }, [showHistory, fetchHistory])
+
+  // プロンプトプレビュー
+  const promptPreview = useMemo(() => {
+    const parts: string[] = []
+    parts.push("Create a promotional POP design for retail display.")
+
+    if (selectedStyle && styleMapEN[selectedStyle]) {
+      parts.push(`Style: ${styleMapEN[selectedStyle]}.`)
+    }
+    if (selectedColor) {
+      parts.push(`Use ${selectedColor} as the primary color scheme.`)
+    }
+    if (catchphrase) {
+      parts.push(`Catchphrase text to display: "${catchphrase}"`)
+    }
+    if (mainText) {
+      parts.push(`Main text to display: "${mainText}"`)
+    }
+    if (prompt) {
+      parts.push(`Additional requirements: ${prompt}`)
+    }
+    if (uploadedImages.length > 0) {
+      parts.push(
+        `Reference images: ${uploadedImages.length} image(s) attached as [image 1]${uploadedImages.length > 1 ? ` ~ [image ${uploadedImages.length}]` : ""}`
+      )
+    }
+    parts.push("Make the design eye-catching, professional, and suitable for apparel retail business.")
+    return parts.join("\n")
+  }, [selectedStyle, selectedColor, catchphrase, mainText, prompt, uploadedImages.length])
+
+  const handleGenerate = async () => {
     setIsGenerating(true)
-    setTimeout(() => {
-      setGeneratedImage("/apparel-fashion-sale-promotional-poster-design.jpg")
+    try {
+      const result = await generateDesignImageAction({
+        selectedStyle,
+        selectedColor,
+        popTitle,
+        catchphrase,
+        mainText,
+        prompt,
+        selectedRatio,
+        customRatioWidth,
+        customRatioHeight,
+        uploadedImages: uploadedImages.map((img) => ({
+          base64: img.base64,
+          mimeType: img.mimeType,
+        })),
+        selectedType,
+      })
+
+      if (!result.success) {
+        toast.error(result.error)
+        return
+      }
+
+      setGeneratedImage(result.data.imageUrl || null)
+      toast.success("画像が生成されました")
+    } catch {
+      toast.error("画像生成中にエラーが発生しました")
+    } finally {
       setIsGenerating(false)
-    }, 2000)
+    }
+  }
+
+  const downloadImage = async (imageUrl: string, filename: string) => {
+    try {
+      const response = await fetch(imageUrl)
+      const blob = await response.blob()
+      const blobUrl = URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.href = blobUrl
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(blobUrl)
+    } catch {
+      // フォールバック: 別タブで開く
+      window.open(imageUrl, "_blank")
+    }
   }
 
   const handleDownload = () => {
     if (generatedImage) {
-      const link = document.createElement("a")
-      link.href = generatedImage
-      link.download = `design-${selectedType}-${Date.now()}.png`
-      link.click()
+      const filename = popTitle.trim()
+        ? `${popTitle.trim()}.png`
+        : `design-${selectedType}-${Date.now()}.png`
+      downloadImage(generatedImage, filename)
+    }
+  }
+
+  const handleHistoryDownload = (imageUrl: string, title: string, type: string) => {
+    downloadImage(imageUrl, `${title || `design-${type}`}.png`)
+  }
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("このデザインを削除しますか?")) return
+    const result = await deleteDesignAssetAction(id)
+    if (result.success) {
+      toast.success("削除しました")
+      fetchHistory()
+    } else {
+      toast.error(result.error)
     }
   }
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
+    const files = Array.from(e.target.files || [])
+    if (uploadedImages.length + files.length > 14) {
+      toast.error("画像は最大14枚までアップロードできます")
+      return
+    }
+    files.forEach((file) => {
       const reader = new FileReader()
-      reader.onload = (e) => {
-        setUploadedImage(e.target?.result as string)
+      reader.onload = () => {
+        const dataUrl = reader.result as string
+        const base64 = dataUrl.split(",")[1]
+        setUploadedImages((prev) => [
+          ...prev,
+          { base64, mimeType: file.type, preview: dataUrl },
+        ])
       }
       reader.readAsDataURL(file)
+    })
+    if (fileInputRef.current) fileInputRef.current.value = ""
+  }
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const files = Array.from(e.dataTransfer.files).filter((file) => file.type.startsWith("image/"))
+    if (uploadedImages.length + files.length > 14) {
+      toast.error("画像は最大14枚までアップロードできます")
+      return
     }
+    files.forEach((file) => {
+      const reader = new FileReader()
+      reader.onload = () => {
+        const dataUrl = reader.result as string
+        const base64 = dataUrl.split(",")[1]
+        setUploadedImages((prev) => [
+          ...prev,
+          { base64, mimeType: file.type, preview: dataUrl },
+        ])
+      }
+      reader.readAsDataURL(file)
+    })
+  }
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+  }
+
+  const insertImageRef = (index: number) => {
+    const tag = `[image ${index + 1}] `
+    const textarea = promptRef.current
+    if (!textarea) {
+      setPrompt((prev) => prev + tag)
+      return
+    }
+    const start = textarea.selectionStart
+    const end = textarea.selectionEnd
+    const before = prompt.slice(0, start)
+    const after = prompt.slice(end)
+    setPrompt(before + tag + after)
+    requestAnimationFrame(() => {
+      textarea.selectionStart = textarea.selectionEnd = start + tag.length
+      textarea.focus()
+    })
   }
 
   const isPopMode = initialType === "pop"
   const historyYears = Array.from(
-    new Set(historyData.map((item) => parseHistoryDate(item.createdAt).getFullYear())),
+    new Set(historyItems.map((item) => parseHistoryDate(item.createdAt).getFullYear())),
   ).sort((a, b) => b - a)
 
   const handleDateRangeChange = (range: HistoryDateRange) => {
@@ -248,7 +388,7 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
   const hasColor = Boolean(colorLabel)
   const hasRatio = Boolean(selectedRatio)
   const hasText = Boolean(catchphrase.trim() || mainText.trim())
-  const hasImage = Boolean(uploadedImage)
+  const hasImage = uploadedImages.length > 0
   const showSelectionBadges = hasStyle || hasColor || hasRatio || hasText || hasImage
 
   const now = new Date()
@@ -260,7 +400,7 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
   const startOfLast30 = new Date(startOfToday)
   startOfLast30.setDate(startOfToday.getDate() - 29)
 
-  const filteredHistory = historyData.filter((item) => {
+  const filteredHistory = historyItems.filter((item) => {
     if (historyTitleQuery.trim()) {
       const keyword = historyTitleQuery.trim().toLowerCase()
       if (!item.title.toLowerCase().includes(keyword)) return false
@@ -302,7 +442,7 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
       case "text":
         return Boolean(catchphrase.trim() || mainText.trim())
       case "image":
-        return Boolean(uploadedImage)
+        return uploadedImages.length > 0
       case "ratio":
         if (!selectedRatio) return false
         if (selectedRatio === "custom") {
@@ -419,32 +559,49 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
       case "image":
         return (
           <div>
-            <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept="image/*" className="hidden" />
-            {uploadedImage ? (
-              <div className="relative">
-                <img
-                  src={uploadedImage || "/placeholder.svg"}
-                  alt="アップロード画像"
-                  className="w-full h-40 object-cover rounded-lg"
-                />
-                <button
-                  onClick={() => {
-                    setUploadedImage(null)
-                    if (fileInputRef.current) fileInputRef.current.value = ""
-                  }}
-                  className="absolute top-2 right-2 p-1 bg-black/50 rounded-full text-white hover:bg-black/70"
-                >
-                  ×
-                </button>
+            <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept="image/*" multiple className="hidden" />
+            {uploadedImages.length > 0 && (
+              <div className="mb-3">
+                <p className="text-xs text-muted-foreground mb-2">
+                  {uploadedImages.length}/14枚 アップロード済み — 画像をクリックで参照タグを挿入
+                </p>
+                <div className="grid grid-cols-4 gap-2">
+                  {uploadedImages.map((img, index) => (
+                    <div key={index} className="relative group">
+                      <span className="absolute top-1 left-1 z-10 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-mono text-white">
+                        image {index + 1}
+                      </span>
+                      <img
+                        src={img.preview}
+                        alt={`参照画像 ${index + 1}`}
+                        className="w-full aspect-square object-cover rounded-lg cursor-pointer ring-0 hover:ring-2 hover:ring-[#345fe1] transition-all"
+                        onClick={() => insertImageRef(index)}
+                        title={`クリックで [image ${index + 1}] を入力欄に挿入`}
+                      />
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setUploadedImages((prev) => prev.filter((_, i) => i !== index))
+                        }}
+                        className="absolute top-1 right-1 p-0.5 bg-black/50 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
-            ) : (
+            )}
+            {uploadedImages.length < 14 && (
               <div
                 onClick={() => fileInputRef.current?.click()}
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
                 className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-[#345fe1] transition-colors cursor-pointer"
               >
                 <Upload className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
                 <p className="text-sm text-muted-foreground">ドラッグ＆ドロップ または クリック</p>
-                <p className="text-xs text-muted-foreground/70 mt-1">PNG, JPG (最大 10MB)</p>
+                <p className="text-xs text-muted-foreground/70 mt-1">PNG, JPG (最大 10MB・14枚まで)</p>
               </div>
             )}
           </div>
@@ -653,11 +810,11 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
                       className="w-full aspect-square object-cover rounded-lg mb-3"
                     />
                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
-                      <Button size="sm" variant="secondary" className="bg-white text-foreground hover:bg-white/90">
+                      <Button size="sm" variant="secondary" className="bg-white text-foreground hover:bg-white/90" onClick={() => handleHistoryDownload(item.image, item.title, item.type)}>
                         <Download className="w-4 h-4 mr-1" />
                         保存
                       </Button>
-                      <Button size="sm" variant="secondary" className="bg-white text-red-600 hover:bg-white/90">
+                      <Button size="sm" variant="secondary" className="bg-white text-red-600 hover:bg-white/90" onClick={() => handleDelete(item.id)}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
@@ -737,7 +894,7 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
                       ) : null}
                       {hasImage ? (
                         <span className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-muted/30 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-                          参照画像: あり
+                          参照画像: {uploadedImages.length}枚
                         </span>
                       ) : null}
                     </div>
@@ -752,11 +909,75 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
                     />
                   </div>
                   <Textarea
-                    placeholder="指示文を入力してください。例: 春らしい明るい雰囲気で、花柄のパターンを背景に配置し、セール情報を目立たせてください。"
+                    ref={promptRef}
+                    placeholder="指示文を入力してください。例: [image 1]を中央に配置し、春らしい明るい雰囲気で、セール情報を目立たせてください。"
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                     className="min-h-27.5 resize-none border-0 bg-transparent p-0 focus-visible:ring-0"
                   />
+
+                  {/* カラー・スタイルプレビュー */}
+                  {(selectedColor || selectedStyle) && (
+                    <div className="mt-4 pt-4 border-t border-border/50">
+                      <p className="text-xs text-muted-foreground mb-2">選択中の設定</p>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedColor && (
+                          <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border/70 bg-muted/20">
+                            <div
+                              className="w-6 h-6 rounded border border-border/50 shadow-sm"
+                              style={{ backgroundColor: selectedColor }}
+                            />
+                            <span className="text-sm font-medium text-foreground">
+                              {colorPalette.find((c) => c.hex.toLowerCase() === selectedColor.toLowerCase())?.name || selectedColor}
+                            </span>
+                          </div>
+                        )}
+                        {selectedStyle && (
+                          <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border/70 bg-muted/20">
+                            <Sparkles className="w-4 h-4 text-[#345fe1]" />
+                            <span className="text-sm font-medium text-foreground">
+                              {styles.find((s) => s.id === selectedStyle)?.name}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 選択済み参照画像の表示 */}
+                  {uploadedImages.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-border/50">
+                      <p className="text-xs text-muted-foreground mb-2">
+                        参照画像 {uploadedImages.length}/14枚 — クリックで [image N] タグを挿入
+                      </p>
+                      <div className="grid grid-cols-4 gap-2">
+                        {uploadedImages.map((img, index) => (
+                          <div key={index} className="relative group">
+                            <span className="absolute top-1 left-1 z-10 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-mono text-white">
+                              image {index + 1}
+                            </span>
+                            <img
+                              src={img.preview}
+                              alt={`参照画像 ${index + 1}`}
+                              className="w-full aspect-square object-cover rounded-lg cursor-pointer ring-0 hover:ring-2 hover:ring-[#345fe1] transition-all"
+                              onClick={() => insertImageRef(index)}
+                              title={`クリックで [image ${index + 1}] を入力欄に挿入`}
+                            />
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setUploadedImages((prev) => prev.filter((_, i) => i !== index))
+                              }}
+                              className="absolute top-1 right-1 p-0.5 bg-black/50 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                     <div className="flex flex-wrap items-center gap-2">
                       {popPanels.map((panel) => {
@@ -788,6 +1009,19 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
                 </div>
               </CardContent>
             </Card>
+
+            {/* プロンプトプレビュー */}
+            <div className="rounded-xl border border-border/50 bg-muted/30 px-4 py-3">
+              <div className="mb-2 flex items-center gap-2">
+                <Code className="h-4 w-4 text-muted-foreground" />
+                <span className="text-xs font-medium text-muted-foreground">
+                  生成プロンプト プレビュー
+                </span>
+              </div>
+              <pre className="whitespace-pre-wrap text-xs text-muted-foreground/80 font-mono leading-relaxed">
+                {promptPreview}
+              </pre>
+            </div>
 
             <Button
               onClick={handleGenerate}
@@ -938,33 +1172,51 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
                   ref={fileInputRef}
                   onChange={handleFileUpload}
                   accept="image/*"
+                  multiple
                   className="hidden"
                 />
-                {uploadedImage ? (
-                  <div className="relative">
-                    <img
-                      src={uploadedImage || "/placeholder.svg"}
-                      alt="アップロード画像"
-                      className="w-full h-40 object-cover rounded-lg"
-                    />
-                    <button
-                      onClick={() => {
-                        setUploadedImage(null)
-                        if (fileInputRef.current) fileInputRef.current.value = ""
-                      }}
-                      className="absolute top-2 right-2 p-1 bg-black/50 rounded-full text-white hover:bg-black/70"
-                    >
-                      ×
-                    </button>
+                {uploadedImages.length > 0 && (
+                  <div className="mb-3">
+                    <p className="text-xs text-muted-foreground mb-2">
+                      {uploadedImages.length}/14枚 — クリックで参照タグ挿入
+                    </p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {uploadedImages.map((img, index) => (
+                        <div key={index} className="relative group">
+                          <span className="absolute top-1 left-1 z-10 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-mono text-white">
+                            image {index + 1}
+                          </span>
+                          <img
+                            src={img.preview}
+                            alt={`参照画像 ${index + 1}`}
+                            className="w-full aspect-square object-cover rounded-lg cursor-pointer ring-0 hover:ring-2 hover:ring-[#345fe1] transition-all"
+                            onClick={() => insertImageRef(index)}
+                            title={`クリックで [image ${index + 1}] を入力欄に挿入`}
+                          />
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setUploadedImages((prev) => prev.filter((_, i) => i !== index))
+                            }}
+                            className="absolute top-1 right-1 p-0.5 bg-black/50 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                ) : (
+                )}
+                {uploadedImages.length < 14 && (
                   <div
                     onClick={() => fileInputRef.current?.click()}
+                    onDrop={handleDrop}
+                    onDragOver={handleDragOver}
                     className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-[#345fe1] transition-colors cursor-pointer"
                   >
                     <Upload className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
                     <p className="text-sm text-muted-foreground">ドラッグ＆ドロップ または クリック</p>
-                    <p className="text-xs text-muted-foreground/70 mt-1">PNG, JPG (最大 10MB)</p>
+                    <p className="text-xs text-muted-foreground/70 mt-1">PNG, JPG (最大 10MB・14枚まで)</p>
                   </div>
                 )}
               </CardContent>
@@ -1034,7 +1286,8 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
               </CardHeader>
               <CardContent>
                 <Textarea
-                  placeholder="デザインの詳細な指示を入力してください。例: 春らしい明るい雰囲気で、花柄のパターンを背景に配置し、セール情報を目立たせてください。"
+                  ref={promptRef}
+                  placeholder="指示文を入力してください。例: [image 1]を中央に配置し、春らしい明るい雰囲気で、セール情報を目立たせてください。"
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   className="min-h-30 resize-none"
@@ -1044,6 +1297,36 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
                 </p>
               </CardContent>
             </Card>
+
+            {/* カラー・スタイルプレビュー */}
+            {(selectedColor || selectedStyle) && (
+              <Card className="bg-muted/30">
+                <CardContent className="p-4">
+                  <p className="text-xs text-muted-foreground mb-3">選択中の設定</p>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedColor && (
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border/70 bg-card shadow-sm">
+                        <div
+                          className="w-6 h-6 rounded border border-border/50 shadow-sm"
+                          style={{ backgroundColor: selectedColor }}
+                        />
+                        <span className="text-sm font-medium text-foreground">
+                          {colorPalette.find((c) => c.hex.toLowerCase() === selectedColor.toLowerCase())?.name || selectedColor}
+                        </span>
+                      </div>
+                    )}
+                    {selectedStyle && (
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border/70 bg-card shadow-sm">
+                        <Sparkles className="w-4 h-4 text-[#345fe1]" />
+                        <span className="text-sm font-medium text-foreground">
+                          {styles.find((s) => s.id === selectedStyle)?.name}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             <Button
               onClick={handleGenerate}

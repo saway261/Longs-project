@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+.pnpm-store/
 
 # next.js
 /.next/
@@ -18,6 +19,7 @@ yarn-error.log*
 
 # env files
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -32,3 +34,9 @@ node_modules/
 .next/
 dist/
 .DS_Store
+
+# 山田
+yamadadocs/
+.vscode/
+.CLAUDE.md
+.claude/

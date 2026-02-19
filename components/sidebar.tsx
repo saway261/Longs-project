@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
+import { logoutAction } from "@/src/actions/auth-actions"
 import {
   Palette,
   Package,
@@ -24,99 +25,111 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-export type MainSection = "design" | "inventory" | "finance" | "data"
-export type SubSection =
-  | "design-pop"
-  | "design-history"
-  | "inventory-main"
-  | "inventory-insights"
-  | "inventory-catalog"
-  | "inventory-planning"
-  | "inventory-ai-advice"
-  | "inventory-procurement"
-  | "finance-main"
-  | "finance-gantt"
-  | "data-main"
-  | "data-registration"
+type SectionId = "design" | "inventory" | "finance" | "data"
 
-interface SidebarProps {
-  activeSection: MainSection
-  activeSubSection: SubSection
-  onSectionChangeAction: (section: MainSection, subSection: SubSection) => void
-}
- 
 const navItems = [
   {
-    id: "design" as const,
+    id: "design" as SectionId,
     label: "デザインスタジオ",
     sublabel: "画像生成",
+    basePath: "/design",
     icon: Palette,
     subItems: [
-      { id: "design-pop" as const, label: "POP作成", icon: FileText },
-      { id: "design-history" as const, label: "作成履歴", icon: BookOpen },
+      { id: "design-pop", label: "POP作成", icon: FileText, href: "/design/pop" },
+      { id: "design-history", label: "作成履歴", icon: BookOpen, href: "/design/history" },
     ],
   },
   {
-    id: "inventory" as const,
+    id: "inventory" as SectionId,
     label: "在庫AI",
     sublabel: "仕入れ最適化",
+    basePath: "/inventory",
     icon: Package,
     subItems: [
-      { id: "inventory-main" as const, label: "仕入れ提案", icon: TrendingUp },
-      { id: "inventory-procurement" as const, label: "仕入れリスト", icon: Table },
-      { id: "inventory-insights" as const, label: "在庫データ分析", icon: BarChart3 },
-      { id: "inventory-catalog" as const, label: "商品一覧", icon: BookOpen },
-      { id: "inventory-planning" as const, label: "在庫計画早見表", icon: BarChart3 },
-      { id: "inventory-ai-advice" as const, label: "AIアドバイス", icon: Bot },
+      { id: "inventory-main", label: "仕入れ提案", icon: TrendingUp, href: "/inventory/suggestions" },
+      { id: "inventory-procurement", label: "仕入れリスト", icon: Table, href: "/inventory/procurement" },
+      { id: "inventory-insights", label: "在庫データ分析", icon: BarChart3, href: "/inventory/insights" },
+      { id: "inventory-catalog", label: "商品一覧", icon: BookOpen, href: "/inventory/catalog" },
+      { id: "inventory-planning", label: "在庫計画早見表", icon: BarChart3, href: "/inventory/planning" },
+      { id: "inventory-ai-advice", label: "AIアドバイス", icon: Bot, href: "/inventory/advice" },
     ],
   },
   {
-    id: "data" as const,
+    id: "data" as SectionId,
     label: "データ",
     sublabel: "登録・編集",
+    basePath: "/data",
     icon: Upload,
     subItems: [
-      { id: "data-main" as const, label: "データ一覧", icon: Table },
-      { id: "data-registration" as const, label: "データ登録", icon: Upload },
+      { id: "data-main", label: "データ一覧", icon: Table, href: "/data" },
+      { id: "data-registration", label: "データ登録", icon: Upload, href: "/data/registration" },
     ],
   },
   {
-    id: "finance" as const,
+    id: "finance" as SectionId,
     label: "ファイナンスフロー",
     sublabel: "予算管理",
+    basePath: "/finance",
     icon: Wallet,
     subItems: [
-      { id: "finance-main" as const, label: "キャッシュフロー", icon: TrendingUp },
-      { id: "finance-gantt" as const, label: "ガントチャート", icon: Calendar },
+      { id: "finance-main", label: "キャッシュフロー", icon: TrendingUp, href: "/finance/overview" },
+      { id: "finance-gantt", label: "ガントチャート", icon: Calendar, href: "/finance/gantt" },
     ],
   },
 ]
 
-export function Sidebar({ activeSection, activeSubSection, onSectionChangeAction }: SidebarProps) {
+export function Sidebar() {
   const router = useRouter()
-  const [expandedSections, setExpandedSections] = useState<MainSection[]>([activeSection])
-  const [isHovering, setIsHovering] = useState(false)
+  const pathname = usePathname()
 
-  const toggleExpand = (section: MainSection) => {
+  // パスベースのアクティブ判定
+  const activeSectionItem = navItems.find((item) => pathname.startsWith(item.basePath))
+  const activeSection = activeSectionItem?.id ?? "design"
+  const activeSubItem = navItems.flatMap((i) => i.subItems).find((sub) => {
+    // /data は完全一致、それ以外は前方一致
+    if (sub.href === "/data") return pathname === "/data"
+    return pathname.startsWith(sub.href)
+  })
+
+  const [expandedSections, setExpandedSections] = useState<SectionId[]>([activeSection])
+  const [isHovering, setIsHovering] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+
+  const toggleExpand = (section: SectionId) => {
     setExpandedSections((prev) => (prev.includes(section) ? prev.filter((s) => s !== section) : [...prev, section]))
   }
 
   const handleMainClick = (item: (typeof navItems)[0]) => {
     toggleExpand(item.id)
-    const defaultSub = item.subItems[0].id
-    onSectionChangeAction(item.id, defaultSub)
+    router.push(item.subItems[0].href)
   }
 
-  const handleSubClick = (mainId: MainSection, subId: SubSection) => {
-    onSectionChangeAction(mainId, subId)
+  const handleSubClick = (href: string) => {
+    router.push(href)
   }
 
   const handleSettingsNavigation = () => {
     router.push("/settings")
   }
 
-  const handleLogout = () => {
-    router.push("/login")
+  const handleLogout = async () => {
+    setIsLoggingOut(true)
+    try {
+      const result = await logoutAction()
+      if (result.success) {
+        router.push("/login")
+        router.refresh() // セッション情報をクリア
+      } else {
+        console.error("ログアウト失敗:", result.error)
+        // エラー時は最低限ログインページへ遷移
+        router.push("/login")
+      }
+    } catch (error) {
+      console.error("ログアウト処理でエラー:", error)
+      router.push("/login")
+    } finally {
+      setIsLoggingOut(false)
+    }
   }
 
   return (
@@ -193,11 +206,11 @@ export function Sidebar({ activeSection, activeSubSection, onSectionChangeAction
                       >
                         {item.subItems.map((subItem) => {
                           const SubIcon = subItem.icon
-                          const isSubActive = activeSubSection === subItem.id
+                          const isSubActive = activeSubItem?.id === subItem.id
                           return (
                             <li key={subItem.id}>
                               <button
-                                onClick={() => handleSubClick(item.id, subItem.id)}
+                                onClick={() => handleSubClick(subItem.href)}
                                 className={cn(
                                   "w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-colors text-left text-sm min-h-11",
                                   isSubActive
@@ -266,9 +279,18 @@ export function Sidebar({ activeSection, activeSubSection, onSectionChangeAction
             </div>
             <button
               onClick={handleLogout}
-              className="p-2 rounded-lg hover:bg-sidebar-accent transition-colors hidden group-hover/sidebar:inline-flex"
+              disabled={isLoggingOut}
+              className={cn(
+                "p-2 rounded-lg transition-colors hidden group-hover/sidebar:inline-flex",
+                isLoggingOut
+                  ? "bg-sidebar-accent/50 cursor-not-allowed"
+                  : "hover:bg-sidebar-accent"
+              )}
             >
-              <LogOut className="w-4 h-4 text-sidebar-foreground/60" />
+              <LogOut className={cn(
+                "w-4 h-4",
+                isLoggingOut ? "text-sidebar-foreground/30" : "text-sidebar-foreground/60"
+              )} />
             </button>
           </div>
         </div>
