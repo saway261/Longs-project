@@ -11,8 +11,11 @@
       "extensions": [
         "dbaeumer.vscode-eslint",
         "prisma.prisma",
-        "ms-azuretools.vscode-docker"
+        "ms-azuretools.vscode-docker",
+        "esbenp.prettier-vscode"
       ]
     }
-  }
+  },
+  // 追加: コンテナが作成された後に自動で実行するコマンド
+  "postCreateCommand": "pnpm install && pnpm prisma generate"
 }

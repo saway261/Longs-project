@@ -119,3 +119,33 @@ The user will handle all git staging and commit operations.
 **Implementation Plans**:
 - Latest plans are stored in `/claude/plans/` (e.g., `goofy-questing-rocket.md`)
 - These documents contain detailed implementation strategies and should be checked before starting work
+
+## Deployment
+
+### Production Environments
+
+The application supports deployment to:
+- **Railway** — Platform-as-a-Service (currently deployed)
+- **Amazon EC2** — Docker Compose + AWS RDS PostgreSQL
+
+### EC2 Deployment
+
+**Architecture**: Nginx (reverse proxy) + Next.js container + AWS RDS PostgreSQL
+
+**Key Files**:
+- `Dockerfile` — Multi-stage build with `runner` stage for production
+- `docker-compose.prod.yml` — Production compose configuration
+- `nginx/nginx.conf` — Reverse proxy, SSL termination, health checks
+- `.env.production.example` — Production environment variables template
+- `app/api/health/route.ts` — Health check endpoint for container orchestration
+
+**Documentation**: See `docs/DEPLOY_EC2.md` for complete deployment instructions including:
+- AWS RDS PostgreSQL setup
+- EC2 instance configuration
+- SSL certificate installation (Let's Encrypt)
+- Zero-downtime deployment strategy
+- Monitoring and maintenance
+
+**Port Configuration**:
+- Development (`docker-compose.yml`): Port 3000
+- Production (`docker-compose.prod.yml`): Port 8080 (Nginx on 80/443)

@@ -1,34 +1,41 @@
-FROM node:20-slim
-
+# --- 1. ベース設定 (軽量なOS環境) ---
+FROM node:20-slim AS base
 WORKDIR /app
-
-# Install OS packages
-# - openssl, git: 開発/ビルドで必要
-# - locales: # 開発用（git log の日本語文字化け対策など）
-RUN apt-get update -y \
- && apt-get install -y --no-install-recommends \
-      openssl git locales curl ca-certificates \
- && sed -i 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen \
- && locale-gen \
- && update-locale LANG=en_US.UTF-8 \
- && apt-get clean \
- && rm -rf /var/lib/apt/lists/*
-
-# # 開発用: UTF-8 ロケールを強制（ターミナル/git出力の文字化け対策）
-ENV LANG=en_US.UTF-8
-ENV LC_ALL=en_US.UTF-8
-
-# Install pnpm
+RUN apt-get update -y && apt-get install -y --no-install-recommends \
+    openssl \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 RUN npm install -g pnpm
 
-# Claude Code (公式インストーラ)
-RUN curl -fsSL https://claude.ai/install.sh | bash
-RUN ln -sf /root/.local/bin/claude /usr/local/bin/claude
-
-COPY package.json pnpm-lock.yaml ./
-
-RUN pnpm install
-
+# --- 2. 開発用 (Development) ---
+FROM base AS development
+# 開発時のみ Git や Claude を入れる
+RUN apt-get update && apt-get install -y git curl locales \
+    && locale-gen en_US.UTF-8
+RUN curl -fsSL https://claude.ai/install.sh | bash && ln -sf /root/.local/bin/claude /usr/local/bin/claude
 COPY . .
-
+RUN pnpm install
 CMD ["pnpm", "dev"]
+
+# --- 3. ビルド用 (Builder) ---
+FROM base AS builder
+# ビルド時のみ Git が必要な場合がある（GitHub経由のライブラリなど）
+RUN apt-get update && apt-get install -y git
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+COPY . .
+RUN pnpm prisma generate
+RUN pnpm build
+
+# --- 4. 本番実行用 (Runner) ---
+FROM base AS runner
+ENV NODE_ENV=production
+# Gitなどは入っておらず、OpenSSLだけがある状態
+COPY --from=builder /app/next.config.mjs ./
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/prisma ./prisma
+
+EXPOSE 8080
+CMD ["sh", "-c", "pnpm prisma migrate deploy && pnpm start"]
