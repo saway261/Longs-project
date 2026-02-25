@@ -16,6 +16,11 @@ import {
   Crop,
   ImagePlus,
   Code,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -111,6 +116,8 @@ const outputTypes: { id: "pop" | "poster"; name: string; desc: string }[] = [
 type PopPanelId = "style" | "color" | "text" | "image" | "ratio"
 
 type HistoryDateRange = "all" | "today" | "yesterday" | "last7" | "last30" | "year"
+type HistorySortKey = "createdAt" | "title"
+type HistorySortDir = "asc" | "desc"
 
 const popPanels = [
   { id: "style", label: "スタイル", hint: "雰囲気を選択", icon: Sparkles },
@@ -129,7 +136,14 @@ const historyDateRanges: { id: HistoryDateRange; label: string }[] = [
   { id: "year", label: "年" },
 ]
 
-const parseHistoryDate = (value: string) => new Date(value.replace(" ", "T"))
+const HISTORY_PAGE_SIZE = 10
+
+const parseHistoryDate = (value: string) => new Date(value)
+
+const formatHistoryDate = (value: string) => {
+  const d = new Date(value)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`
+}
 
 
 
@@ -158,6 +172,10 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
   const [historyDateRange, setHistoryDateRange] = useState<HistoryDateRange>("all")
   const [historyYear, setHistoryYear] = useState<number | null>(null)
   const [historyTitleQuery, setHistoryTitleQuery] = useState("")
+  const [historySortKey, setHistorySortKey] = useState<HistorySortKey>("createdAt")
+  const [historySortDir, setHistorySortDir] = useState<HistorySortDir>("desc")
+  const [historyCurrentPage, setHistoryCurrentPage] = useState(1)
+  const [titleTouched, setTitleTouched] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const promptRef = useRef<HTMLTextAreaElement>(null)
 
@@ -170,7 +188,7 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
           id: asset.id,
           type: asset.type,
           title: asset.title || "無題",
-          createdAt: asset.createdAt.replace("T", " ").slice(0, 16),
+          createdAt: asset.createdAt,
           image: asset.imageUrl || "",
           style: asset.style || "未設定",
         }))
@@ -185,6 +203,10 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
       fetchHistory()
     }
   }, [showHistory, fetchHistory])
+
+  useEffect(() => {
+    setHistoryCurrentPage(1)
+  }, [historyStyleFilter, historyDateRange, historyYear, historyTitleQuery, historySortKey, historySortDir])
 
   // プロンプトプレビュー
   const promptPreview = useMemo(() => {
@@ -216,6 +238,11 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
   }, [selectedStyle, selectedColor, catchphrase, mainText, prompt, uploadedImages.length])
 
   const handleGenerate = async () => {
+    if (!popTitle.trim()) {
+      setTitleTouched(true)
+      toast.error("タイトルを入力してください")
+      return
+    }
     setIsGenerating(true)
     try {
       const result = await generateDesignImageAction({
@@ -371,9 +398,6 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
     setHistoryYear((current) => current ?? historyYears[0] ?? null)
   }
 
-  const selectedStyleName =
-    historyStyleFilter === "all" ? null : styles.find((style) => style.id === historyStyleFilter)?.name
-
   const selectedStyleLabel = styles.find((style) => style.id === selectedStyle)?.name
   const normalizedSelectedColor = selectedColor.trim().toLowerCase()
   const selectedColorName = colorPalette.find((color) => color.hex.toLowerCase() === normalizedSelectedColor)?.name
@@ -406,7 +430,7 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
       if (!item.title.toLowerCase().includes(keyword)) return false
     }
 
-    if (selectedStyleName && item.style !== selectedStyleName) return false
+    if (historyStyleFilter !== "all" && item.style !== historyStyleFilter) return false
 
     const createdAt = parseHistoryDate(item.createdAt)
 
@@ -428,6 +452,25 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
 
     return true
   })
+
+  const sortedHistory = [...filteredHistory].sort((a, b) => {
+    if (historySortKey === "createdAt") {
+      const da = parseHistoryDate(a.createdAt).getTime()
+      const db = parseHistoryDate(b.createdAt).getTime()
+      return historySortDir === "asc" ? da - db : db - da
+    }
+    const cmp = a.title.localeCompare(b.title, "ja")
+    return historySortDir === "asc" ? cmp : -cmp
+  })
+
+  const historyTotalPages = Math.ceil(sortedHistory.length / HISTORY_PAGE_SIZE)
+  const pagedHistory =
+    historyTotalPages > 1
+      ? sortedHistory.slice(
+          (historyCurrentPage - 1) * HISTORY_PAGE_SIZE,
+          historyCurrentPage * HISTORY_PAGE_SIZE,
+        )
+      : sortedHistory
 
   const styleOptions = [{ id: "all", name: "すべて" }, ...styles]
 
@@ -794,13 +837,54 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
           </div>
         </div>
 
+        {/* 並べ替え */}
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <span className="text-[11px] font-semibold text-muted-foreground mr-1">並べ替え</span>
+          {(
+            [
+              { key: "createdAt" as HistorySortKey, label: "作成日" },
+              { key: "title" as HistorySortKey, label: "タイトル (50音)" },
+            ] as const
+          ).map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => {
+                if (historySortKey === key) {
+                  setHistorySortDir((d) => (d === "asc" ? "desc" : "asc"))
+                } else {
+                  setHistorySortKey(key)
+                  setHistorySortDir(key === "createdAt" ? "desc" : "asc")
+                }
+              }}
+              className={cn(
+                "flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs transition-colors",
+                historySortKey === key
+                  ? "border-[#345fe1] bg-[#345fe1]/10 text-[#345fe1] font-medium"
+                  : "border-border text-muted-foreground hover:border-[#345fe1]/50",
+              )}
+            >
+              {label}
+              {historySortKey === key ? (
+                historySortDir === "asc" ? (
+                  <ArrowUp className="w-3 h-3" />
+                ) : (
+                  <ArrowDown className="w-3 h-3" />
+                )
+              ) : (
+                <ArrowUpDown className="w-3 h-3 opacity-40" />
+              )}
+            </button>
+          ))}
+          <span className="ml-auto text-xs text-muted-foreground">{filteredHistory.length}件</span>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredHistory.length === 0 ? (
             <div className="col-span-full rounded-2xl border border-dashed border-border bg-muted/40 py-16 text-center">
               <p className="text-sm text-muted-foreground">条件に一致する作成履歴がありません</p>
             </div>
           ) : (
-            filteredHistory.map((item) => (
+            pagedHistory.map((item) => (
               <Card key={item.id} className="group hover:shadow-lg transition-shadow">
                 <CardContent className="p-4">
                   <div className="relative">
@@ -831,15 +915,75 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
                     </span>
                     <span className="text-xs text-muted-foreground flex items-center gap-1">
                       <Clock className="w-3 h-3" />
-                      {item.createdAt}
+                      {formatHistoryDate(item.createdAt)}
                     </span>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">スタイル: {item.style}</p>
+                  <p className="text-xs text-muted-foreground mt-1">スタイル: {styles.find((s) => s.id === item.style)?.name ?? item.style}</p>
                 </CardContent>
               </Card>
             ))
           )}
         </div>
+
+        {/* ページネーション */}
+        {historyTotalPages > 1 && (
+          <div className="flex items-center justify-center gap-1 mt-6">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={historyCurrentPage === 1}
+              onClick={() => setHistoryCurrentPage((p) => p - 1)}
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            {(() => {
+              const pages: (number | "...")[] = []
+              for (let i = 1; i <= historyTotalPages; i++) {
+                if (
+                  i === 1 ||
+                  i === historyTotalPages ||
+                  Math.abs(i - historyCurrentPage) <= 2
+                ) {
+                  pages.push(i)
+                } else if (pages[pages.length - 1] !== "...") {
+                  pages.push("...")
+                }
+              }
+              return pages.map((page, idx) =>
+                page === "..." ? (
+                  <span
+                    key={`ellipsis-${idx}`}
+                    className="px-1 text-muted-foreground text-xs"
+                  >
+                    …
+                  </span>
+                ) : (
+                  <Button
+                    key={page}
+                    variant={historyCurrentPage === page ? "default" : "outline"}
+                    size="sm"
+                    className={cn(
+                      "w-8 h-8 p-0 text-xs",
+                      historyCurrentPage === page &&
+                        "bg-[#345fe1] hover:bg-[#345fe1]/90 border-[#345fe1]",
+                    )}
+                    onClick={() => setHistoryCurrentPage(page as number)}
+                  >
+                    {page}
+                  </Button>
+                ),
+              )
+            })()}
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={historyCurrentPage === historyTotalPages}
+              onClick={() => setHistoryCurrentPage((p) => p + 1)}
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
+        )}
       </div>
     )
   }
@@ -900,13 +1044,22 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
                     </div>
                   ) : null}
                   <div className="mb-4 space-y-2">
-                    <Label className="text-xs text-muted-foreground">POPタイトル</Label>
+                    <Label className="text-xs text-muted-foreground">
+                      POPタイトル <span className="text-red-500">*</span>
+                    </Label>
                     <Input
                       value={popTitle}
                       onChange={(e) => setPopTitle(e.target.value)}
+                      onBlur={() => setTitleTouched(true)}
                       placeholder="例: 春の新作フェア"
-                      className="h-9"
+                      className={cn(
+                        "h-9",
+                        titleTouched && !popTitle.trim() && "border-red-500 focus-visible:ring-red-500",
+                      )}
                     />
+                    {titleTouched && !popTitle.trim() && (
+                      <p className="text-xs text-red-500">タイトルを入力してください</p>
+                    )}
                   </div>
                   <Textarea
                     ref={promptRef}
