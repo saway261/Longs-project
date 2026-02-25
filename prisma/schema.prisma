@@ -58,6 +58,13 @@ enum DesignType {
   @@map("design_type")
 }
 
+enum UserRole {
+  admin
+  general
+
+  @@map("user_role")
+}
+
 // ============================================================
 // ユーザー・認証
 // ============================================================
@@ -67,7 +74,7 @@ model UserAccount {
   email        String   @unique
   name         String?
   passwordHash String?  @map("password_hash")
-  role         String   @default("admin")
+  role         UserRole @default(general)
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
 

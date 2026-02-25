@@ -18,7 +18,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <>
       {/* クライアント側でセッション監視（ページ遷移時・定期的にチェック） */}
       <SessionGuard checkIntervalMs={5 * 60 * 1000} />
-      <AppShell>{children}</AppShell>
+      <AppShell user={{ name: session.name, role: session.role }}>{children}</AppShell>
     </>
   )
 }

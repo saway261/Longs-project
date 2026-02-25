@@ -24,6 +24,7 @@ import {
   Upload,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { getRoleLabel } from "@/src/lib/role-labels"
 
 type SectionId = "design" | "inventory" | "finance" | "data"
 
@@ -78,7 +79,9 @@ const navItems = [
   },
 ]
 
-export function Sidebar() {
+type UserInfo = { name: string; role: string }
+
+export function Sidebar({ user }: { user: UserInfo }) {
   const router = useRouter()
   const pathname = usePathname()
 
@@ -267,14 +270,12 @@ export function Sidebar() {
         <div className="p-4 border-t border-sidebar-border">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <img
-                src="/professional-japanese-business-person-avatar.jpg"
-                alt="ユーザーアバター"
-                className="w-10 h-10 rounded-full object-cover"
-              />
+              <div className="w-10 h-10 bg-[#345fe1] rounded-full flex items-center justify-center shrink-0 text-white font-medium text-sm">
+                {user.name ? user.name.charAt(0) : "?"}
+              </div>
               <div className="text-sm overflow-hidden w-0 group-hover/sidebar:w-35 opacity-0 group-hover/sidebar:opacity-100 whitespace-nowrap pointer-events-none transition-[width,opacity] duration-200 ease-in-out delay-75">
-                <p className="font-medium">山田 太郎</p>
-                <p className="text-xs text-sidebar-foreground/50">店長</p>
+                <p className="font-medium">{user.name || "（名前未設定）"}</p>
+                <p className="text-xs text-sidebar-foreground/50">{getRoleLabel(user.role)}</p>
               </div>
             </div>
             <button
@@ -299,7 +300,7 @@ export function Sidebar() {
   )
 }
 
-export function Header() {
+export function Header({ user }: { user: UserInfo }) {
   return (
     <header className="h-16 bg-white border-b border-border px-6 flex items-center justify-end">
       <div className="flex items-center gap-4">
@@ -308,8 +309,8 @@ export function Header() {
           <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
         </button>
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-foreground">山田 太郎</span>
-          <span className="text-xs text-muted-foreground">管理者</span>
+          <span className="text-sm font-medium text-foreground">{user.name || "（名前未設定）"}</span>
+          <span className="text-xs text-muted-foreground">{getRoleLabel(user.role)}</span>
         </div>
       </div>
     </header>
