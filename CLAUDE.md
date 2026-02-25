@@ -120,6 +120,90 @@ The user will handle all git staging and commit operations.
 - Latest plans are stored in `/claude/plans/` (e.g., `goofy-questing-rocket.md`)
 - These documents contain detailed implementation strategies and should be checked before starting work
 
+## DB調査用 psqlコマンド
+
+Docker Composeコンテナ内では `$DATABASE_URL` が使えます（`postgresql://user:password@db:5432/apparel_db`）。
+
+### 接続・基本操作
+
+```bash
+# DB接続（コンテナ内から）
+psql $DATABASE_URL
+
+# 一行コマンドで実行
+psql $DATABASE_URL -c "SQL文"
+```
+
+### スキーマ確認
+
+```bash
+# テーブル一覧
+psql $DATABASE_URL -c "\dt"
+
+# テーブルのカラム定義を確認
+psql $DATABASE_URL -c "\d テーブル名"
+# 例: psql $DATABASE_URL -c "\d design_asset"
+
+# Enum型の値一覧
+psql $DATABASE_URL -c "\dT 型名"
+# 例: psql $DATABASE_URL -c "\dT design_type"
+```
+
+### データ確認
+
+```bash
+# 全レコード（件数確認）
+psql $DATABASE_URL -c "SELECT COUNT(*) FROM テーブル名;"
+
+# 全カラムを表示（最新順）
+psql $DATABASE_URL -c "SELECT * FROM テーブル名 ORDER BY created_at DESC;"
+
+# 特定カラムのみ
+psql $DATABASE_URL -c "SELECT id, title, style, created_at FROM design_asset ORDER BY created_at DESC;"
+
+# NULLチェック（IS NOT NULLで有無を確認）
+psql $DATABASE_URL -c "SELECT id, title, image_url IS NOT NULL as has_image FROM design_asset;"
+
+# 過去30日以内のレコード
+psql $DATABASE_URL -c "SELECT id, title, created_at FROM design_asset WHERE created_at >= NOW() - INTERVAL '30 days' ORDER BY created_at DESC;"
+
+# ソフトデリート確認（deleted_at）
+psql $DATABASE_URL -c "SELECT COUNT(*) FROM design_asset WHERE deleted_at IS NULL;"
+psql $DATABASE_URL -c "SELECT COUNT(*) FROM design_asset WHERE deleted_at IS NOT NULL;"
+```
+
+### セッション・ユーザー確認
+
+```bash
+# 有効なセッション一覧
+psql $DATABASE_URL -c "SELECT id, user_id, expires_at, last_activity_at FROM session;"
+
+# ユーザー一覧
+psql $DATABASE_URL -c "SELECT id, email FROM user_account;"
+
+# 特定ユーザーのデザイン資産
+psql $DATABASE_URL -c "SELECT id, title, style, created_at FROM design_asset WHERE created_by = 'ユーザーUUID' AND deleted_at IS NULL ORDER BY created_at DESC;"
+```
+
+### design_asset テーブルの調査例
+
+```bash
+# フィルター再現: 過去30日 + ユーザー紐付き + 削除なし
+psql $DATABASE_URL -c "
+  SELECT id, title, style, type, created_at
+  FROM design_asset
+  WHERE deleted_at IS NULL
+    AND created_at >= NOW() - INTERVAL '30 days'
+  ORDER BY created_at DESC;
+"
+```
+
+> **調査で判明した注意点**
+> - `created_at` はタイムゾーン付き（`timestamptz`）で保存されている
+> - `title`・`style` は NULL になりうる（UI側で "無題"/"未設定" にフォールバック）
+> - フロントの日付フィルターは `historyDateRange === "last30"` で `createdAt >= startOfLast30`（今日 − 29日）で判定
+> - `historyStyleFilter` が "all" 以外の場合、スタイル未設定（style=NULL → "未設定"）のレコードは除外される
+
 ## Deployment
 
 ### Production Environments

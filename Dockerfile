@@ -8,12 +8,38 @@ RUN npm install -g pnpm
 
 # --- 2. 開発用 (Development) ---
 FROM base AS development
-# 開発時のみ Git や Claude を入れる
-RUN apt-get update && apt-get install -y git curl locales \
-    && locale-gen en_US.UTF-8
-RUN curl -fsSL https://claude.ai/install.sh | bash && ln -sf /root/.local/bin/claude /usr/local/bin/claude
+
+# 開発時のみ: Git / curl / locales + psql クライアント
+# ※ psql は「postgresql-client」パッケージで入ります（DB本体は入りません）
+RUN apt-get update -y \
+ && apt-get install -y --no-install-recommends \
+    git \
+    curl \
+    locales \
+    postgresql-client \
+ && sed -i 's/^# *\(en_US.UTF-8\)/\1/' /etc/locale.gen \
+ && locale-gen \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/*
+
+ENV LANG=en_US.UTF-8 \
+    LC_ALL=en_US.UTF-8
+
+# Claude Code
+# Claude Code（開発用）
+RUN apt-get update -y \
+ && apt-get install -y --no-install-recommends ca-certificates curl \
+ && update-ca-certificates \
+ && curl -fsSL https://claude.ai/install.sh | bash \
+ && test -x /root/.local/bin/claude \
+ && ln -sf /root/.local/bin/claude /usr/local/bin/claude \
+ && claude --version \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/*
+
 COPY . .
 RUN pnpm install
+
 CMD ["pnpm", "dev"]
 
 # --- 3. ビルド用 (Builder) ---
