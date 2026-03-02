@@ -63,7 +63,7 @@ const navItems = [
     icon: Upload,
     subItems: [
       { id: "data-main", label: "データ一覧", icon: Table, href: "/data" },
-      { id: "data-registration", label: "データ登録", icon: Upload, href: "/data/registration" },
+      { id: "data-import", label: "データインポート", icon: Upload, href: "/data/import" },
     ],
   },
   {
@@ -91,6 +91,7 @@ export function Sidebar({ user }: { user: UserInfo }) {
   const activeSubItem = navItems.flatMap((i) => i.subItems).find((sub) => {
     // /data は完全一致、それ以外は前方一致
     if (sub.href === "/data") return pathname === "/data"
+    if (sub.href === "/data/import") return pathname.startsWith("/data/import")
     return pathname.startsWith(sub.href)
   })
 

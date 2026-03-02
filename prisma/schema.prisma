@@ -81,6 +81,7 @@ model UserAccount {
   procurementLists ProcurementList[]
   designAssets     DesignAsset[]
   sessions         Session[]
+  dataImports      DataImport[]
 
   @@map("user_account")
 }
@@ -345,12 +346,16 @@ model DataImport {
   summary       String?
   note          String?
   importedAt    DateTime      @default(now()) @map("imported_at") @db.Timestamptz()
+  updatedAt     DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+  deletedAt     DateTime?     @map("deleted_at") @db.Timestamptz()
+  importedBy    String?       @map("imported_by") @db.Uuid
   rowsTotal     Int?          @map("rows_total")
   rowsSuccess   Int?          @map("rows_success")
   rowsSkipped   Int?          @map("rows_skipped")
   warningsCount Int?          @map("warnings_count")
   errorsCount   Int?          @map("errors_count")
 
+  importer         UserAccount?      @relation(fields: [importedBy], references: [id])
   rows             DataImportRow[]
   issues           DataImportIssue[]
   salesFacts       SalesFact[]
@@ -359,6 +364,7 @@ model DataImport {
   grossProfitFacts GrossProfitFact[]
 
   @@index([dataset, importedAt(sort: Desc)])
+  @@index([importedBy])
   @@map("data_import")
 }
 
@@ -417,6 +423,8 @@ model SalesFact {
   returnYen             BigInt?   @map("return_yen")
   grossProfitYen        BigInt?   @map("gross_profit_yen")
   grossProfitRate       Decimal?  @map("gross_profit_rate") @db.Decimal(5, 2)
+  updatedAt             DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+  deletedAt             DateTime? @map("deleted_at") @db.Timestamptz()
 
   import DataImport? @relation(fields: [importId], references: [id])
 
@@ -448,6 +456,8 @@ model PayablesFact {
   discount2Yen       BigInt? @map("discount2_yen")
   feeYen             BigInt? @map("fee_yen")
   other2Yen          BigInt? @map("other2_yen")
+  updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+  deletedAt          DateTime? @map("deleted_at") @db.Timestamptz()
 
   import DataImport? @relation(fields: [importId], references: [id])
 
@@ -483,6 +493,8 @@ model ReceivablesFact {
   npPaymentsYen         BigInt? @map("np_payments_yen")
   creditLimitBalanceYen BigInt? @map("credit_limit_balance_yen")
   notes                 String?
+  updatedAt             DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+  deletedAt             DateTime? @map("deleted_at") @db.Timestamptz()
 
   import DataImport? @relation(fields: [importId], references: [id])
 
@@ -503,6 +515,8 @@ model GrossProfitFact {
   returnYen             BigInt?  @map("return_yen")
   grossProfitYen        BigInt?  @map("gross_profit_yen")
   grossProfitRate       Decimal? @map("gross_profit_rate") @db.Decimal(5, 2)
+  updatedAt             DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+  deletedAt             DateTime? @map("deleted_at") @db.Timestamptz()
 
   import DataImport? @relation(fields: [importId], references: [id])
 
