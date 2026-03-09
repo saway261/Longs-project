@@ -58,7 +58,20 @@ export async function getAvailableFiscalYears(): Promise<number[]> {
     orderBy: { fiscalYear: "desc" },
     select: { fiscalYear: true },
   })
-  return rows.map((r) => r.fiscalYear)
+  const fromDb = rows.map((r) => r.fiscalYear)
+
+  // 現在の会計年度と翌年度を常に含める（4月始まり）
+  const now = new Date()
+  const calYear = now.getFullYear()
+  const calMonth = now.getMonth() + 1
+  const currentFY = calMonth >= 4 ? calYear : calYear - 1
+  const nextFY = currentFY + 1
+
+  const set = new Set(fromDb)
+  set.add(currentFY)
+  set.add(nextFY)
+
+  return Array.from(set).sort((a, b) => b - a)
 }
 
 export async function getInventoryPlan(fiscalYear: number): Promise<InventoryPlanMonthDTO[]> {

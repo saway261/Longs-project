@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Download, ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Package, DollarSign } from "lucide-react"
+import { Download, ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Package, DollarSign, Maximize2, Minimize2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -30,6 +30,7 @@ export function InventoryPlanning() {
   const [showComparison, setShowComparison] = useState(true)
   const [planDraft, setPlanDraft] = useState<Record<number, InventoryPlanMonthDTO[]>>({})
   const [isBulkPlanOpen, setIsBulkPlanOpen] = useState(false)
+  const [isFullscreen, setIsFullscreen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
 
@@ -64,6 +65,35 @@ export function InventoryPlanning() {
   const data = selectedYear !== null ? (planDraft[selectedYear] ?? []) : []
 
   const yearIndex = availableYears.indexOf(selectedYear ?? 0)
+
+  const handleDownload = () => {
+    if (data.length === 0 || selectedYear === null) return
+
+    const columns: { label: string; getValue: (row: InventoryPlanMonthDTO) => string }[] = [
+      { label: "月", getValue: (r) => r.month },
+      { label: "仕入れ予算(円)", getValue: (r) => String(r.purchaseBudget) },
+      { label: "出荷金額(円)", getValue: (r) => String(r.shipmentAmount) },
+      { label: "出荷粗利益率(%)", getValue: (r) => r.shipmentGrossProfitRate.toFixed(1) },
+      { label: "出荷原価(円)", getValue: (r) => String(r.shipmentCost) },
+      { label: "廃品(円)", getValue: (r) => String(r.waste) },
+      { label: "月末在庫金額(円)", getValue: (r) => String(r.monthEndInventory) },
+      { label: "在庫計画(円)", getValue: (r) => String(r.inventoryPlan) },
+      { label: "計画差(円)", getValue: (r) => String(r.planDiff) },
+      { label: "昨年在庫実績(円)", getValue: (r) => String(r.lastYearInventory) },
+    ]
+
+    const header = columns.map((c) => `"${c.label}"`).join(",")
+    const rows = data.map((row) => columns.map((c) => `"${c.getValue(row)}"`).join(","))
+    const csv = "\uFEFF" + [header, ...rows].join("\r\n")
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `在庫計画早見表_${selectedYear}年度.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("ja-JP", {
@@ -205,11 +235,30 @@ export function InventoryPlanning() {
         <p className="text-muted-foreground">月次の在庫計画と実績の比較</p>
       </div>
 
-      <Dialog open={isBulkPlanOpen} onOpenChange={setIsBulkPlanOpen}>
-        <DialogContent className="max-w-400 w-[80vw] h-[85vh] flex flex-col">
+      <Dialog open={isBulkPlanOpen} onOpenChange={(open) => { setIsBulkPlanOpen(open); if (!open) setIsFullscreen(false) }}>
+        <DialogContent
+          fullscreen={isFullscreen}
+          className={cn(
+            "flex flex-col",
+            !isFullscreen && "max-w-400 w-[80vw] h-[85vh]"
+          )}
+        >
           <DialogHeader>
-            <DialogTitle>{selectedYear}年度 計画一括入力</DialogTitle>
-            <DialogDescription>在庫計画早見表と同じ並びで入力できます。</DialogDescription>
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <DialogTitle>{selectedYear}年度 計画一括入力</DialogTitle>
+                <DialogDescription>在庫計画早見表と同じ並びで入力できます。</DialogDescription>
+              </div>
+              <Button
+                variant="outline"
+                size="icon"
+                className="shrink-0 mt-0.5"
+                onClick={() => setIsFullscreen(!isFullscreen)}
+                title={isFullscreen ? "通常表示に戻す" : "全画面表示"}
+              >
+                {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+              </Button>
+            </div>
           </DialogHeader>
           <div className="flex-1 overflow-auto rounded-lg border">
             <table className="min-w-full text-sm">
@@ -412,12 +461,12 @@ export function InventoryPlanning() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-xs text-muted-foreground">年度の切り替え・計画登録・ダウンロードをまとめて操作</p>
             <div className="flex flex-wrap gap-2">
-              <Button variant="outline" className="bg-transparent text-[#345fe1] border-[#345fe1]">
+              <Button variant="outline" className="bg-transparent text-[#345fe1] border-[#345fe1]" onClick={handleDownload} disabled={data.length === 0}>
                 <Download className="w-4 h-4 mr-2" />
                 ダウンロード
               </Button>
               <Button className="bg-[#345fe1] hover:bg-[#2a4bb3] text-white" onClick={() => setIsBulkPlanOpen(true)}>
-                計画登録
+                計画登録/修正
               </Button>
             </div>
           </div>
