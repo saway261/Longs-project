@@ -188,6 +188,7 @@ export type ProcurementItemRow = {
   orderQty: number
   status: "high" | "overstock" | "normal"
   addedAt: string
+  orderedAt: string | null
 }
 
 type RawProcurementRow = {
@@ -205,6 +206,7 @@ type RawProcurementRow = {
   orderQty: bigint | number
   status: string
   addedAt: Date
+  orderedAt: Date | null
 }
 
 export async function getOrCreateDraftList(userId: string): Promise<string> {
@@ -240,7 +242,8 @@ export async function getProcurementListForUser(
       pi.suggested_qty                                         AS "suggestedQty",
       COALESCE(pi.order_qty, 0)                                AS "orderQty",
       pi.status::text                                          AS "status",
-      pi.added_at                                              AS "addedAt"
+      pi.added_at                                              AS "addedAt",
+      pi.ordered_at                                            AS "orderedAt"
     FROM procurement_item pi
     JOIN product_variant pv ON pv.id = pi.variant_id
     JOIN product p ON p.id = pv.product_id
@@ -276,6 +279,7 @@ export async function getProcurementListForUser(
     orderQty: Number(row.orderQty),
     status: row.status as "high" | "overstock" | "normal",
     addedAt: row.addedAt instanceof Date ? row.addedAt.toISOString() : String(row.addedAt),
+    orderedAt: row.orderedAt instanceof Date ? row.orderedAt.toISOString() : row.orderedAt ? String(row.orderedAt) : null,
   }))
 
   return { listId, items }
@@ -318,6 +322,10 @@ export async function updateProcurementItemQty(itemId: string, qty: number): Pro
   })
 }
 
+export async function markProcurementItemOrdered(itemId: string): Promise<void> {
+  await prisma.procurementItem.update({ where: { id: itemId }, data: { orderedAt: new Date() } })
+}
+
 export async function clearProcurementList(listId: string): Promise<void> {
-  await prisma.procurementItem.deleteMany({ where: { listId } })
+  await prisma.procurementItem.deleteMany({ where: { listId, orderedAt: null } })
 }

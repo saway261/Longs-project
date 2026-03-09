@@ -10,6 +10,7 @@ import {
   removeProcurementItem,
   updateProcurementItemQty,
   clearProcurementList,
+  markProcurementItemOrdered,
 } from "@/src/services/inventory-service"
 import { getSession } from "@/src/lib/auth"
 
@@ -71,6 +72,12 @@ export async function updateProcurementItemQtyAction(itemId: string, qty: number
   const session = await getSession()
   if (!session) return { error: "未ログインです" }
   await updateProcurementItemQty(itemId, qty)
+}
+
+export async function markProcurementItemOrderedAction(itemId: string): Promise<void | { error: string }> {
+  const session = await getSession()
+  if (!session) return { error: "未ログインです" }
+  await markProcurementItemOrdered(itemId)
 }
 
 export async function clearProcurementListAction(): Promise<void | { error: string }> {

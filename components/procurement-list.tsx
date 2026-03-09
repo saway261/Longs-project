@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import { Trash2, ClipboardList } from "lucide-react"
+import { Trash2, ClipboardList, CheckCircle } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -11,6 +11,7 @@ import {
   removeProcurementItemAction,
   updateProcurementItemQtyAction,
   clearProcurementListAction,
+  markProcurementItemOrderedAction,
   type ProcurementItemRow,
 } from "@/src/actions/inventory-actions"
 import { cn } from "@/lib/utils"
@@ -37,11 +38,17 @@ export function ProcurementList() {
       .finally(() => setLoading(false))
   }, [])
 
+  const pendingItems = useMemo(() => items.filter((i) => i.orderedAt == null), [items])
+  const orderedItems = useMemo(
+    () => items.filter((i) => i.orderedAt != null).sort((a, b) => (b.orderedAt! > a.orderedAt! ? 1 : -1)),
+    [items],
+  )
+
   const totals = useMemo(() => {
-    const totalOrderQty = items.reduce((acc, item) => acc + item.orderQty, 0)
-    const totalAmount = items.reduce((acc, item) => acc + item.orderQty * (item.priceYen ?? 0), 0)
+    const totalOrderQty = pendingItems.reduce((acc, item) => acc + item.orderQty, 0)
+    const totalAmount = pendingItems.reduce((acc, item) => acc + item.orderQty * (item.priceYen ?? 0), 0)
     return { totalOrderQty, totalAmount }
-  }, [items])
+  }, [pendingItems])
 
   const handleQtyChange = (itemId: string, qty: number) => {
     setItems((prev) => prev.map((i) => (i.itemId === itemId ? { ...i, orderQty: qty } : i)))
@@ -56,8 +63,14 @@ export function ProcurementList() {
     await removeProcurementItemAction(itemId)
   }
 
+  const handleMarkOrdered = async (itemId: string) => {
+    const now = new Date().toISOString()
+    setItems((prev) => prev.map((i) => (i.itemId === itemId ? { ...i, orderedAt: now } : i)))
+    await markProcurementItemOrderedAction(itemId)
+  }
+
   const handleClear = async () => {
-    setItems([])
+    setItems((prev) => prev.filter((i) => i.orderedAt != null))
     await clearProcurementListAction()
   }
 
@@ -75,7 +88,7 @@ export function ProcurementList() {
         <Button
           variant="outline"
           onClick={handleClear}
-          disabled={items.length === 0 || loading}
+          disabled={pendingItems.length === 0 || loading}
           className="text-[#345fe1] border-[#345fe1]"
         >
           すべてクリア
@@ -86,7 +99,7 @@ export function ProcurementList() {
         <Card className="bg-muted/40">
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground">登録アイテム</p>
-            <p className="text-lg font-bold">{items.length} 件</p>
+            <p className="text-lg font-bold">{pendingItems.length} 件</p>
           </CardContent>
         </Card>
         <Card className="bg-muted/40">
@@ -115,7 +128,7 @@ export function ProcurementList() {
             <div className="rounded-lg border border-dashed border-border py-12 text-center text-sm text-muted-foreground">
               読み込み中...
             </div>
-          ) : items.length === 0 ? (
+          ) : pendingItems.length === 0 ? (
             <div className="rounded-lg border border-dashed border-border py-12 text-center text-sm text-muted-foreground">
               仕入れ提案から「発注に追加」を押すと、ここに表示されます。
             </div>
@@ -136,7 +149,7 @@ export function ProcurementList() {
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((item) => (
+                  {pendingItems.map((item) => (
                     <tr key={item.itemId} className="border-t border-border/70">
                       <td className="px-4 py-3 text-xs text-muted-foreground">{item.janCode ?? "-"}</td>
                       <td className="px-4 py-3">
@@ -178,14 +191,25 @@ export function ProcurementList() {
                         </Badge>
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleRemove(item.itemId)}
-                          aria-label="削除"
-                        >
-                          <Trash2 className="w-4 h-4 text-[#345fe1]" />
-                        </Button>
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleMarkOrdered(item.itemId)}
+                            aria-label="発注済みにする"
+                            className="text-green-600 border-green-300 hover:bg-green-50"
+                          >
+                            <CheckCircle className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleRemove(item.itemId)}
+                            aria-label="削除"
+                          >
+                            <Trash2 className="w-4 h-4 text-[#345fe1]" />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -195,6 +219,72 @@ export function ProcurementList() {
           )}
         </CardContent>
       </Card>
+
+      {orderedItems.length > 0 && (
+        <Card className="mt-6">
+          <CardHeader className="flex flex-wrap items-center justify-between gap-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-green-600" />
+              発注済み
+            </CardTitle>
+            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+              {orderedItems.length} 件
+            </Badge>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto rounded-lg border">
+              <table className="min-w-full text-sm">
+                <thead className="bg-muted/60">
+                  <tr>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">発注日</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">JAN</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">商品</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">カテゴリ</th>
+                    <th className="px-4 py-3 text-right font-medium text-muted-foreground">発注数</th>
+                    <th className="px-4 py-3 text-right font-medium text-muted-foreground">概算金額</th>
+                    <th className="px-4 py-3 text-center font-medium text-muted-foreground">ステータス</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {orderedItems.map((item) => (
+                    <tr key={item.itemId} className="border-t border-border/70 bg-green-50/40">
+                      <td className="px-4 py-3 text-xs text-muted-foreground">
+                        {new Date(item.orderedAt!).toLocaleDateString("ja-JP")}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">{item.janCode ?? "-"}</td>
+                      <td className="px-4 py-3">
+                        <p className="font-medium text-foreground">{item.productName}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {[item.color, item.size].filter(Boolean).join(" / ")}
+                        </p>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">{item.categoryName ?? "-"}</td>
+                      <td className="px-4 py-3 text-right font-medium">{item.orderQty}点</td>
+                      <td className="px-4 py-3 text-right font-semibold">
+                        {formatCurrency(item.orderQty * (item.priceYen ?? 0))}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <Badge
+                          className={cn(
+                            "px-3 py-1",
+                            item.status === "high"
+                              ? "bg-green-100 text-green-700 hover:bg-green-100"
+                              : item.status === "overstock"
+                                ? "bg-red-100 text-red-700 hover:bg-red-100"
+                                : "bg-muted text-muted-foreground",
+                          )}
+                        >
+                          {item.status === "high" ? "高需要" : item.status === "overstock" ? "過剰在庫" : "通常"}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }
