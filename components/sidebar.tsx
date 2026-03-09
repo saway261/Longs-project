@@ -68,13 +68,13 @@ const navItems = [
   },
   {
     id: "finance" as SectionId,
-    label: "ファイナンスフロー",
+    label: "ファイナンスフロー(モック)",
     sublabel: "予算管理",
     basePath: "/finance",
     icon: Wallet,
     subItems: [
-      { id: "finance-main", label: "キャッシュフロー", icon: TrendingUp, href: "/finance/overview" },
-      { id: "finance-gantt", label: "ガントチャート", icon: Calendar, href: "/finance/gantt" },
+      { id: "finance-main", label: "キャッシュフロー(モック)", icon: TrendingUp, href: "/finance/overview" },
+      { id: "finance-gantt", label: "ガントチャート(モック)", icon: Calendar, href: "/finance/gantt" },
     ],
   },
 ]

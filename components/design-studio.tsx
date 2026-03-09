@@ -118,6 +118,8 @@ type PopPanelId = "style" | "color" | "text" | "image" | "ratio"
 type HistoryDateRange = "all" | "today" | "yesterday" | "last7" | "last30" | "year"
 type HistorySortKey = "createdAt" | "title"
 type HistorySortDir = "asc" | "desc"
+// "all" = すべて, "mine" = 自分のみ, 将来的にはユーザーIDを文字列で指定可能
+type HistoryCreatorFilter = "all" | "mine" | string
 
 const popPanels = [
   { id: "style", label: "スタイル", hint: "雰囲気を選択", icon: Sparkles },
@@ -166,10 +168,12 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
     Array<{ base64: string; mimeType: string; preview: string }>
   >([])
   const [historyItems, setHistoryItems] = useState<
-    Array<{ id: string; type: string; title: string; createdAt: string; image: string; style: string }>
+    Array<{ id: string; type: string; title: string; createdAt: string; image: string; style: string; createdBy: string | null; createdByName: string }>
   >([])
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [historyStyleFilter, setHistoryStyleFilter] = useState<string>("all")
   const [historyDateRange, setHistoryDateRange] = useState<HistoryDateRange>("all")
+  const [historyCreatorFilter, setHistoryCreatorFilter] = useState<HistoryCreatorFilter>("all")
   const [historyYear, setHistoryYear] = useState<number | null>(null)
   const [historyTitleQuery, setHistoryTitleQuery] = useState("")
   const [historySortKey, setHistorySortKey] = useState<HistorySortKey>("createdAt")
@@ -183,14 +187,17 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
   const fetchHistory = useCallback(async () => {
     const result = await getDesignAssetsAction()
     if (result.success) {
+      setCurrentUserId(result.data.currentUserId)
       setHistoryItems(
-        result.data.map((asset) => ({
+        result.data.assets.map((asset) => ({
           id: asset.id,
           type: asset.type,
           title: asset.title || "無題",
           createdAt: asset.createdAt,
           image: asset.imageUrl || "",
           style: asset.style || "未設定",
+          createdBy: asset.createdBy,
+          createdByName: asset.createdByName,
         }))
       )
     } else {
@@ -206,7 +213,7 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
 
   useEffect(() => {
     setHistoryCurrentPage(1)
-  }, [historyStyleFilter, historyDateRange, historyYear, historyTitleQuery, historySortKey, historySortDir])
+  }, [historyStyleFilter, historyDateRange, historyYear, historyTitleQuery, historySortKey, historySortDir, historyCreatorFilter])
 
   // プロンプトプレビュー
   const promptPreview = useMemo(() => {
@@ -431,6 +438,13 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
     }
 
     if (historyStyleFilter !== "all" && item.style !== historyStyleFilter) return false
+
+    if (historyCreatorFilter === "mine") {
+      if (item.createdBy !== currentUserId) return false
+    } else if (historyCreatorFilter !== "all") {
+      // 将来的なユーザーID指定フィルター
+      if (item.createdBy !== historyCreatorFilter) return false
+    }
 
     const createdAt = parseHistoryDate(item.createdAt)
 
@@ -834,6 +848,31 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
                 )}
               </div>
             )}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[11px] font-semibold text-muted-foreground w-12">作成者</span>
+              {(
+                [
+                  { id: "all", label: "すべて" },
+                  { id: "mine", label: "自分のみ" },
+                ] as const
+              ).map(({ id, label }) => {
+                const isActive = historyCreatorFilter === id
+                return (
+                  <button
+                    key={id}
+                    onClick={() => setHistoryCreatorFilter(id)}
+                    className={cn(
+                      "flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs transition-colors",
+                      isActive
+                        ? "border-[#345fe1] bg-[#345fe1]/10 text-[#345fe1] font-medium"
+                        : "border-border text-muted-foreground hover:border-[#345fe1]/50",
+                    )}
+                  >
+                    {label}
+                  </button>
+                )
+              })}
+            </div>
           </div>
         </div>
 
