@@ -208,6 +208,30 @@ async function main() {
   }
   console.log(`✓ ProductCategory`)
 
+  // ── FixedCost ─────────────────────────────────────────────────────────────────
+  const fixedCostSeed = [
+    { id: "fc000001-0000-0000-0000-000000000001", name: "家賃",            amountYen: 980000,  dueDay: 25, sortOrder: 0 },
+    { id: "fc000001-0000-0000-0000-000000000002", name: "人件費",          amountYen: 4200000, dueDay: 25, sortOrder: 1 },
+    { id: "fc000001-0000-0000-0000-000000000003", name: "物流費",          amountYen: 620000,  dueDay: 20, sortOrder: 2 },
+    { id: "fc000001-0000-0000-0000-000000000004", name: "SaaS / システム", amountYen: 180000,  dueDay: 15, sortOrder: 3 },
+  ]
+  for (const fc of fixedCostSeed) {
+    await prisma.fixedCost.upsert({ where: { id: fc.id }, update: {}, create: fc })
+  }
+  console.log(`✓ FixedCost`)
+
+  // ── ReservePolicy ─────────────────────────────────────────────────────────────
+  const reservePolicySeed = [
+    { id: "aa000001-0000-0000-0000-000000000001", name: "緊急準備金", description: "不測の事態への備え",       percent: "10", sortOrder: 0 },
+    { id: "aa000001-0000-0000-0000-000000000002", name: "季節仕入れ", description: "シーズン商品の仕入れ資金", percent: "15", sortOrder: 1 },
+    { id: "aa000001-0000-0000-0000-000000000003", name: "設備更新",   description: "店舗設備の更新・修繕",     percent:  "5", sortOrder: 2 },
+    { id: "aa000001-0000-0000-0000-000000000004", name: "事業拡大",   description: "新店舗・新事業への投資",   percent: "10", sortOrder: 3 },
+  ]
+  for (const rp of reservePolicySeed) {
+    await prisma.reservePolicy.upsert({ where: { id: rp.id }, update: {}, create: rp })
+  }
+  console.log(`✓ ReservePolicy`)
+
   // ── Warehouse ────────────────────────────────────────────────────────────────
   const warehouseId = "eeee0001-0000-0000-0000-000000000001"
   await prisma.warehouse.upsert({ where: { id: warehouseId }, update: {}, create: { id: warehouseId, name: "本社倉庫" } })

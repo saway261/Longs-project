@@ -12,9 +12,13 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronUp,
+  Wallet,
+  Plus,
+  Trash2,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { dataSets } from "@/lib/data-sets"
 import { cn } from "@/lib/utils"
@@ -27,6 +31,13 @@ import {
   type ImportResult,
   type UnknownItemInfo,
 } from "@/src/actions/data-actions"
+import {
+  getFixedCostsAction,
+  saveFixedCostsAction,
+  type FixedCostDTO,
+} from "@/src/actions/settings-actions"
+
+type FixedCostDraftRow = Omit<FixedCostDTO, "id"> & { _key: string; id?: string }
 
 type HistoryDialogState = {
   datasetId: string
@@ -106,6 +117,49 @@ export function DataRegistration() {
   const [unknownItems, setUnknownItems] = useState<UnknownItemInfo[]>([])
   const [categoryConfirmOpen, setCategoryConfirmOpen] = useState(false)
   const [pendingImport, setPendingImport] = useState<PendingImport | null>(null)
+
+  // ── 固定費状態 ────────────────────────────────────────────────────────────
+  const [fixedCosts, setFixedCosts] = useState<FixedCostDTO[]>([])
+  const [fixedCostsDraft, setFixedCostsDraft] = useState<FixedCostDraftRow[]>([])
+  const [isFixedEditing, setIsFixedEditing] = useState(false)
+  const [fixedLoading, setFixedLoading] = useState(true)
+  const [fixedSaving, setFixedSaving] = useState(false)
+  const [fixedError, setFixedError] = useState<string | null>(null)
+
+  useEffect(() => {
+    ;(async () => {
+      const res = await getFixedCostsAction()
+      if (res.success) setFixedCosts(res.data)
+      setFixedLoading(false)
+    })()
+  }, [])
+
+  const handleFixedEdit = () => {
+    setFixedCostsDraft(fixedCosts.map((i) => ({ ...i, _key: i.id })))
+    setFixedError(null)
+    setIsFixedEditing(true)
+  }
+  const handleFixedSave = async () => {
+    setFixedSaving(true)
+    setFixedError(null)
+    const items = fixedCostsDraft.map((i) => ({ id: i.id, name: i.name, amountYen: i.amountYen, dueDay: i.dueDay }))
+    const res = await saveFixedCostsAction(items)
+    setFixedSaving(false)
+    if (res.success) {
+      setFixedCosts(res.data)
+      setIsFixedEditing(false)
+    } else {
+      setFixedError(res.error)
+    }
+  }
+  const handleFixedCancel = () => {
+    setFixedCostsDraft(fixedCosts.map((i) => ({ ...i, _key: i.id })))
+    setFixedError(null)
+    setIsFixedEditing(false)
+  }
+  const handleAddFixedCost = () => {
+    setFixedCostsDraft((prev) => [...prev, { _key: `new-${Date.now()}`, name: "新規項目", amountYen: 0, dueDay: 25, sortOrder: prev.length }])
+  }
 
   const fetchHistory = async () => {
     const result = await getImportHistoryByDatasetAction()
@@ -330,6 +384,125 @@ export function DataRegistration() {
           )
         })}
       </div>
+
+      {/* ── 固定費の設定 ── */}
+      <Card>
+        <CardHeader>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <CardTitle className="flex items-center gap-2">
+              <Wallet className="w-5 h-5 text-[#345fe1]" />
+              固定費の設定
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              {isFixedEditing && (
+                <Button variant="outline" size="sm" onClick={handleAddFixedCost}>
+                  <Plus className="w-4 h-4 mr-1" />
+                  項目追加
+                </Button>
+              )}
+              {isFixedEditing ? (
+                <>
+                  <Button variant="outline" size="sm" onClick={handleFixedCancel} disabled={fixedSaving}>
+                    キャンセル
+                  </Button>
+                  <Button size="sm" className="bg-[#345fe1] hover:bg-[#2a4bb3] text-white" onClick={handleFixedSave} disabled={fixedSaving}>
+                    {fixedSaving && <Loader2 className="w-3 h-3 mr-1 animate-spin" />}
+                    保存
+                  </Button>
+                </>
+              ) : (
+                <Button variant="outline" size="sm" onClick={handleFixedEdit} disabled={fixedLoading}>
+                  編集
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {fixedLoading ? (
+            <div className="flex items-center justify-center py-8 gap-2 text-muted-foreground">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span className="text-sm">読み込み中...</span>
+            </div>
+          ) : (
+            <>
+              {fixedError && <p className="text-xs text-red-500 mb-3">{fixedError}</p>}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {(isFixedEditing ? fixedCostsDraft : fixedCosts).map((item, index) => (
+                  <div key={isFixedEditing ? (item as FixedCostDraftRow)._key : item.id} className="p-4 border border-border rounded-lg space-y-3">
+                    <div className="flex items-center justify-between gap-2">
+                      {isFixedEditing ? (
+                        <Input
+                          value={fixedCostsDraft[index].name}
+                          onChange={(e) =>
+                            setFixedCostsDraft((prev) =>
+                              prev.map((cost, idx) => (idx === index ? { ...cost, name: e.target.value } : cost)),
+                            )
+                          }
+                        />
+                      ) : (
+                        <p className="text-sm font-semibold">{item.name}</p>
+                      )}
+                      {isFixedEditing && (
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => setFixedCostsDraft((prev) => prev.filter((_, idx) => idx !== index))}
+                        >
+                          <Trash2 className="w-4 h-4 text-red-500" />
+                        </Button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground">月額</p>
+                        {isFixedEditing ? (
+                          <Input
+                            type="number"
+                            value={fixedCostsDraft[index].amountYen}
+                            onChange={(e) =>
+                              setFixedCostsDraft((prev) =>
+                                prev.map((cost, idx) =>
+                                  idx === index ? { ...cost, amountYen: Number(e.target.value) } : cost,
+                                ),
+                              )
+                            }
+                          />
+                        ) : (
+                          <p className="text-lg font-bold text-foreground">
+                            {new Intl.NumberFormat("ja-JP").format((item as FixedCostDTO).amountYen)} 円
+                          </p>
+                        )}
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground">支払日</p>
+                        {isFixedEditing ? (
+                          <Input
+                            type="number"
+                            value={fixedCostsDraft[index].dueDay}
+                            onChange={(e) =>
+                              setFixedCostsDraft((prev) =>
+                                prev.map((cost, idx) => (idx === index ? { ...cost, dueDay: Number(e.target.value) } : cost)),
+                              )
+                            }
+                          />
+                        ) : (
+                          <p className="text-lg font-bold text-foreground">{(item as FixedCostDTO).dueDay} 日</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {!isFixedEditing && fixedCosts.length === 0 && (
+                  <p className="text-sm text-muted-foreground col-span-2 text-center py-4">
+                    固定費が登録されていません。「編集」→「項目追加」から追加してください。
+                  </p>
+                )}
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       {/* ファイル選択ダイアログ */}
       <Dialog

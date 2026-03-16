@@ -455,7 +455,7 @@ export function FinanceFlow({ initialTab = "overview" }: FinanceFlowProps) {
       case "gantt":
         return "ガントチャート"
       default:
-        return "ファイナンスフロー"
+        return "キャッシュフロー"
     }
   }
 

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Calendar, Settings2, Wallet, Plus, Trash2, Loader2, RefreshCcw } from "lucide-react"
+import { Calendar, Settings2, Plus, Trash2, Loader2, RefreshCcw } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,8 +13,10 @@ import {
   deleteCategoryAction,
   getInventoryTurnoverPeriodAction,
   setInventoryTurnoverPeriodAction,
+  getReservePoliciesAction,
+  saveReservePoliciesAction,
 } from "@/src/actions/settings-actions"
-import type { CategoryDTO } from "@/src/actions/settings-actions"
+import type { CategoryDTO, ReservePolicyDTO } from "@/src/actions/settings-actions"
 
 // ── 在庫回転率の計算期間選択肢 ──────────────────────────────────────────────
 const TURNOVER_PERIOD_OPTIONS = [
@@ -22,22 +24,6 @@ const TURNOVER_PERIOD_OPTIONS = [
   { value: 3, label: "3ヶ月" },
   { value: 6, label: "6ヶ月" },
   { value: 12, label: "12ヶ月（1年）" },
-]
-
-// ── 固定費・内部留保はローカル状態のまま ──────────────────────────────────
-
-const fixedCostDefaults = [
-  { id: "rent", name: "家賃", amount: 980000, day: 25 },
-  { id: "payroll", name: "人件費", amount: 4200000, day: 25 },
-  { id: "logistics", name: "物流費", amount: 620000, day: 20 },
-  { id: "saas", name: "SaaS / システム", amount: 180000, day: 15 },
-]
-
-const reserveDefaults = [
-  { id: "emergency", name: "緊急準備金", description: "不測の事態への備え", percent: 10 },
-  { id: "seasonal", name: "季節仕入れ", description: "シーズン商品の仕入れ資金", percent: 15 },
-  { id: "equipment", name: "設備更新", description: "店舗設備の更新・修繕", percent: 5 },
-  { id: "expansion", name: "事業拡大", description: "新店舗・新事業への投資", percent: 10 },
 ]
 
 // ── カテゴリ編集用の行型（新規追加行は id が未定） ────────────────────────
@@ -61,12 +47,29 @@ export default function SettingsPage() {
   const [turnoverSaving, setTurnoverSaving] = useState(false)
   const [turnoverError, setTurnoverError] = useState<string | null>(null)
 
+  // ── 内部留保状態 ──────────────────────────────────────────────────────────
+  const [reservePolicies, setReservePolicies] = useState<ReservePolicyDTO[]>([])
+  const [reserveDraft, setReserveDraft] = useState<ReservePolicyDTO[]>([])
+  const [isReserveEditing, setIsReserveEditing] = useState(false)
+  const [reserveLoading, setReserveLoading] = useState(true)
+  const [reserveSaving, setReserveSaving] = useState(false)
+  const [reserveError, setReserveError] = useState<string | null>(null)
+
   // ── 在庫回転率計算期間: DBから初期値ロード ────────────────────────────────
   useEffect(() => {
     ;(async () => {
       const res = await getInventoryTurnoverPeriodAction()
       if (res.success) setTurnoverPeriod(res.months)
       setTurnoverLoading(false)
+    })()
+  }, [])
+
+  // ── 内部留保: DBから初期値ロード ──────────────────────────────────────────
+  useEffect(() => {
+    ;(async () => {
+      const res = await getReservePoliciesAction()
+      if (res.success) setReservePolicies(res.data)
+      setReserveLoading(false)
     })()
   }, [])
 
@@ -84,14 +87,6 @@ export default function SettingsPage() {
     }
   }
   const handleTurnoverCancel = () => { setTurnoverPeriodDraft(turnoverPeriod); setTurnoverError(null); setIsTurnoverEditing(false) }
-
-  // ── 固定費・内部留保状態 ──────────────────────────────────────────────────
-  const [fixedCosts, setFixedCosts] = useState(fixedCostDefaults)
-  const [fixedCostsDraft, setFixedCostsDraft] = useState(fixedCostDefaults)
-  const [isFixedEditing, setIsFixedEditing] = useState(false)
-  const [reserveSettings, setReserveSettings] = useState(reserveDefaults)
-  const [reserveDraft, setReserveDraft] = useState(reserveDefaults)
-  const [isReserveEditing, setIsReserveEditing] = useState(false)
 
   // ── カテゴリ取得 ──────────────────────────────────────────────────────────
   const fetchCategories = useCallback(async () => {
@@ -198,20 +193,24 @@ export default function SettingsPage() {
     }
   }
 
-  // ── 固定費ハンドラ ────────────────────────────────────────────────────────
-  const handleFixedEdit = () => { setFixedCostsDraft(fixedCosts.map((i) => ({ ...i }))); setIsFixedEditing(true) }
-  const handleFixedSave = () => { setFixedCosts(fixedCostsDraft.map((i) => ({ ...i }))); setIsFixedEditing(false) }
-  const handleFixedCancel = () => { setFixedCostsDraft(fixedCosts.map((i) => ({ ...i }))); setIsFixedEditing(false) }
-  const handleAddFixedCost = () => {
-    setFixedCostsDraft((prev) => [...prev, { id: `new-${Date.now()}`, name: "新規項目", amount: 0, day: 25 }])
-  }
-
   // ── 内部留保ハンドラ ──────────────────────────────────────────────────────
-  const handleReserveEdit = () => { setReserveDraft(reserveSettings.map((i) => ({ ...i }))); setIsReserveEditing(true) }
-  const handleReserveSave = () => { setReserveSettings(reserveDraft.map((i) => ({ ...i }))); setIsReserveEditing(false) }
-  const handleReserveCancel = () => { setReserveDraft(reserveSettings.map((i) => ({ ...i }))); setIsReserveEditing(false) }
+  const handleReserveEdit = () => { setReserveDraft(reservePolicies.map((i) => ({ ...i }))); setReserveError(null); setIsReserveEditing(true) }
+  const handleReserveSave = async () => {
+    setReserveSaving(true)
+    setReserveError(null)
+    const items = reserveDraft.map((i) => ({ id: i.id, percent: i.percent }))
+    const res = await saveReservePoliciesAction(items)
+    setReserveSaving(false)
+    if (res.success) {
+      setReservePolicies(res.data)
+      setIsReserveEditing(false)
+    } else {
+      setReserveError(res.error)
+    }
+  }
+  const handleReserveCancel = () => { setReserveDraft(reservePolicies.map((i) => ({ ...i }))); setReserveError(null); setIsReserveEditing(false) }
 
-  const reserveView = isReserveEditing ? reserveDraft : reserveSettings
+  const reserveView = isReserveEditing ? reserveDraft : reservePolicies
   const reserveTotal = reserveView.reduce((sum, item) => sum + item.percent, 0)
 
   const displayRows = isCategoryEditing ? draft : categories.map((c) => ({ key: c.id, id: c.id, categoryCode: c.categoryCode ?? "", name: c.name, sellThroughDays: c.sellThroughDays }))
@@ -449,109 +448,6 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* ── 固定費の設定 ── */}
-        <Card>
-          <CardHeader>
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <CardTitle className="flex items-center gap-2">
-                <Wallet className="w-5 h-5 text-[#345fe1]" />
-                固定費の設定
-              </CardTitle>
-              <div className="flex items-center gap-2">
-                {isFixedEditing && (
-                  <Button variant="outline" size="sm" onClick={handleAddFixedCost}>
-                    <Plus className="w-4 h-4 mr-1" />
-                    項目追加
-                  </Button>
-                )}
-                {isFixedEditing ? (
-                  <>
-                    <Button variant="outline" size="sm" onClick={handleFixedCancel}>
-                      キャンセル
-                    </Button>
-                    <Button size="sm" className="bg-[#345fe1] hover:bg-[#2a4bb3] text-white" onClick={handleFixedSave}>
-                      保存
-                    </Button>
-                  </>
-                ) : (
-                  <Button variant="outline" size="sm" onClick={handleFixedEdit}>
-                    編集
-                  </Button>
-                )}
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {(isFixedEditing ? fixedCostsDraft : fixedCosts).map((item, index) => (
-              <div key={item.id} className="p-4 border border-border rounded-lg space-y-3">
-                <div className="flex items-center justify-between gap-2">
-                  {isFixedEditing ? (
-                    <Input
-                      value={fixedCostsDraft[index].name}
-                      onChange={(e) =>
-                        setFixedCostsDraft((prev) =>
-                          prev.map((cost, idx) => (idx === index ? { ...cost, name: e.target.value } : cost)),
-                        )
-                      }
-                    />
-                  ) : (
-                    <p className="text-sm font-semibold">{item.name}</p>
-                  )}
-                  {isFixedEditing && (
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() =>
-                        setFixedCostsDraft((prev) => prev.filter((cost) => cost.id !== item.id))
-                      }
-                    >
-                      <Trash2 className="w-4 h-4 text-red-500" />
-                    </Button>
-                  )}
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground">月額</p>
-                    {isFixedEditing ? (
-                      <Input
-                        type="number"
-                        value={fixedCostsDraft[index].amount}
-                        onChange={(e) =>
-                          setFixedCostsDraft((prev) =>
-                            prev.map((cost, idx) =>
-                              idx === index ? { ...cost, amount: Number(e.target.value) } : cost,
-                            ),
-                          )
-                        }
-                      />
-                    ) : (
-                      <p className="text-lg font-bold text-foreground">
-                        {new Intl.NumberFormat("ja-JP").format(item.amount)} 円
-                      </p>
-                    )}
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground">支払日</p>
-                    {isFixedEditing ? (
-                      <Input
-                        type="number"
-                        value={fixedCostsDraft[index].day}
-                        onChange={(e) =>
-                          setFixedCostsDraft((prev) =>
-                            prev.map((cost, idx) => (idx === index ? { ...cost, day: Number(e.target.value) } : cost)),
-                          )
-                        }
-                      />
-                    ) : (
-                      <p className="text-lg font-bold text-foreground">{item.day} 日</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
         {/* ── 内部留保の設定 ── */}
         <Card>
           <CardHeader>
@@ -563,15 +459,16 @@ export default function SettingsPage() {
               <div className="flex items-center gap-2">
                 {isReserveEditing ? (
                   <>
-                    <Button variant="outline" size="sm" onClick={handleReserveCancel}>
+                    <Button variant="outline" size="sm" onClick={handleReserveCancel} disabled={reserveSaving}>
                       キャンセル
                     </Button>
-                    <Button size="sm" className="bg-[#345fe1] hover:bg-[#2a4bb3] text-white" onClick={handleReserveSave}>
+                    <Button size="sm" className="bg-[#345fe1] hover:bg-[#2a4bb3] text-white" onClick={handleReserveSave} disabled={reserveSaving}>
+                      {reserveSaving && <Loader2 className="w-3 h-3 mr-1 animate-spin" />}
                       保存
                     </Button>
                   </>
                 ) : (
-                  <Button variant="outline" size="sm" onClick={handleReserveEdit}>
+                  <Button variant="outline" size="sm" onClick={handleReserveEdit} disabled={reserveLoading}>
                     編集
                   </Button>
                 )}
@@ -579,65 +476,75 @@ export default function SettingsPage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {reserveView.map((item, index) => (
-                <div key={item.id} className="p-4 border border-border rounded-lg space-y-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-semibold">{item.name}</p>
-                      <p className="text-xs text-muted-foreground">{item.description}</p>
-                    </div>
-                    {isReserveEditing ? (
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="number"
-                          min={0}
-                          max={40}
-                          value={reserveDraft[index].percent}
-                          onChange={(e) =>
+            {reserveLoading ? (
+              <div className="flex items-center justify-center py-8 gap-2 text-muted-foreground">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span className="text-sm">読み込み中...</span>
+              </div>
+            ) : (
+              <>
+                {reserveError && <p className="text-xs text-red-500 mb-3">{reserveError}</p>}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {reserveView.map((item, index) => (
+                    <div key={item.id} className="p-4 border border-border rounded-lg space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold">{item.name}</p>
+                          <p className="text-xs text-muted-foreground">{item.description}</p>
+                        </div>
+                        {isReserveEditing ? (
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              min={0}
+                              max={100}
+                              value={reserveDraft[index].percent}
+                              onChange={(e) =>
+                                setReserveDraft((prev) =>
+                                  prev.map((row, idx) =>
+                                    idx === index ? { ...row, percent: Number(e.target.value) } : row,
+                                  ),
+                                )
+                              }
+                              className="w-20 text-right"
+                            />
+                            <span className="text-xs text-muted-foreground">%</span>
+                          </div>
+                        ) : (
+                          <p className="text-lg font-bold text-foreground">{item.percent}%</p>
+                        )}
+                      </div>
+                      {isReserveEditing && (
+                        <Slider
+                          value={[reserveDraft[index].percent]}
+                          onValueChange={(value: number[]) =>
                             setReserveDraft((prev) =>
-                              prev.map((row, idx) =>
-                                idx === index ? { ...row, percent: Number(e.target.value) } : row,
-                              ),
+                              prev.map((row, idx) => (idx === index ? { ...row, percent: value[0] } : row)),
                             )
                           }
-                          className="w-20 text-right"
+                          max={100}
+                          step={1}
+                          className="[&_[data-slot=slider-track]]:bg-[#345fe1]/15 [&_[data-slot=slider-range]]:bg-[#345fe1] [&_[data-slot=slider-thumb]]:border-[#345fe1] [&_[data-slot=slider-thumb]]:focus-visible:ring-[#345fe1]/30 [&_[data-slot=slider-thumb]]:hover:ring-[#345fe1]/20"
                         />
-                        <span className="text-xs text-muted-foreground">%</span>
-                      </div>
-                    ) : (
-                      <p className="text-lg font-bold text-foreground">{item.percent}%</p>
-                    )}
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <div className="rounded-lg border border-border/70 bg-muted/30 p-4 flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <p className="text-xs text-muted-foreground">内部留保合計</p>
+                    <p className="text-lg font-bold text-foreground">{reserveTotal}%</p>
                   </div>
-                  {isReserveEditing && (
-                    <Slider
-                      value={[reserveDraft[index].percent]}
-                      onValueChange={(value: number[]) =>
-                        setReserveDraft((prev) =>
-                          prev.map((row, idx) => (idx === index ? { ...row, percent: value[0] } : row)),
-                        )
-                      }
-                      max={40}
-                      step={1}
-                      className="[&_[data-slot=slider-track]]:bg-[#345fe1]/15 [&_[data-slot=slider-range]]:bg-[#345fe1] [&_[data-slot=slider-thumb]]:border-[#345fe1] [&_[data-slot=slider-thumb]]:focus-visible:ring-[#345fe1]/30 [&_[data-slot=slider-thumb]]:hover:ring-[#345fe1]/20"
-                    />
+                  <div className="text-right">
+                    <p className="text-xs text-muted-foreground">可処分予算目安</p>
+                    <p className="text-lg font-bold text-[#345fe1]">{Math.max(0, 100 - reserveTotal)}%</p>
+                  </div>
+                  {reserveTotal > 100 && (
+                    <p className="text-xs text-red-500">合計が100%を超えています。</p>
                   )}
                 </div>
-              ))}
-            </div>
-            <div className="rounded-lg border border-border/70 bg-muted/30 p-4 flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <p className="text-xs text-muted-foreground">内部留保合計</p>
-                <p className="text-lg font-bold text-foreground">{reserveTotal}%</p>
-              </div>
-              <div className="text-right">
-                <p className="text-xs text-muted-foreground">可処分予算目安</p>
-                <p className="text-lg font-bold text-[#345fe1]">{Math.max(0, 100 - reserveTotal)}%</p>
-              </div>
-              {reserveTotal > 100 && (
-                <p className="text-xs text-red-500">合計が100%を超えています。</p>
-              )}
-            </div>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>

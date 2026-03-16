@@ -128,6 +128,17 @@ model ReservePolicy {
   @@map("reserve_policy")
 }
 
+model FixedCost {
+   id        String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+   name      String
+   amountYen Int     @map("amount_yen")
+   dueDay    Int     @map("due_day")
+   sortOrder Int     @default(0) @map("sort_order")
+   isActive  Boolean @default(true) @map("is_active")
+
+   @@map("fixed_cost")
+}
+
 model SystemSetting {
   key       String   @id
   value     String
