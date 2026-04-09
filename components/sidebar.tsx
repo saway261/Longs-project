@@ -58,7 +58,6 @@ const navItems = [
       { id: "inventory-planning", label: "在庫計画早見表", icon: BarChart3, href: "/inventory/planning" },
       { id: "inventory-customer-matrix", label: "得意先4象限", icon: Building2, href: "/inventory/matrix/customer" },
       { id: "inventory-product-matrix", label: "商品4象限", icon: Shirt, href: "/inventory/matrix/product" },
-      { id: "inventory-ai-advice", label: "AIアドバイス(モック)", icon: Bot, href: "/inventory/advice" },
     ],
   },
   {
