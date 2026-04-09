@@ -23,11 +23,13 @@ import {
   Bot,
   Upload,
   Building2,
+  Globe,
+  Sparkles,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getRoleLabel } from "@/src/lib/role-labels"
 
-type SectionId = "design" | "inventory" | "finance" | "data"
+type SectionId = "design" | "inventory" | "advice" | "finance" | "data"
 
 const navItems = [
   {
@@ -57,6 +59,19 @@ const navItems = [
       { id: "inventory-customer-matrix", label: "得意先4象限", icon: Building2, href: "/inventory/matrix/customer" },
       { id: "inventory-product-matrix", label: "商品4象限", icon: Shirt, href: "/inventory/matrix/product" },
       { id: "inventory-ai-advice", label: "AIアドバイス(モック)", icon: Bot, href: "/inventory/advice" },
+    ],
+  },
+  {
+    id: "advice" as SectionId,
+    label: "AIアドバイス",
+    sublabel: "経営判断支援",
+    basePath: "/advice",
+    icon: Bot,
+    subItems: [
+      { id: "advice-weekly-news", label: "週次ニュース", icon: Calendar, href: "/advice/news/weekly" },
+      { id: "advice-business-news", label: "経営判断ニュース", icon: Globe, href: "/advice/news/business" },
+      { id: "advice-action-candidates", label: "最適アクション候補", icon: Sparkles, href: "/advice/actions" },
+      { id: "advice-report", label: "AIレポート作成", icon: FileText, href: "/advice/reports" },
     ],
   },
   {
