@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { Calendar, Settings2, Plus, Trash2, Loader2, RefreshCcw } from "lucide-react"
+import { PageHeader } from "@/components/page-header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -218,13 +219,11 @@ export default function SettingsPage() {
   return (
     <div className="flex-1 overflow-auto bg-white">
       <div className="max-w-6xl mx-auto px-6 py-10 space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground uppercase tracking-wide">Settings</p>
-            <h1 className="text-2xl font-bold text-foreground">システム設定</h1>
-            <p className="text-muted-foreground">カテゴリ別の売り切り期限など、基本設定を管理します。</p>
-          </div>
-        </div>
+        <PageHeader
+          eyebrow="Settings"
+          title="システム設定"
+          description="カテゴリ別の売り切り期限など、基本設定を管理します。"
+        />
 
         {/* ── カテゴリ別 売り切り期限設定 ── */}
         <Card>

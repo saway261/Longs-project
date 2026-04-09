@@ -262,7 +262,7 @@ export function InventoryAI({ initialTab = "recommendations" }: InventoryAIProps
   const catalogRangeEnd = Math.min(catalogEnd, filteredProducts.length)
 
   const productEditDialog = (
-    <Dialog open={editingProduct !== null} onOpenChange={(open) => !open && setEditingProduct(null)}>
+    <Dialog open={editingProduct !== null} onOpenChange={(open: boolean) => !open && setEditingProduct(null)}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>商品編集</DialogTitle>
@@ -279,7 +279,7 @@ export function InventoryAI({ initialTab = "recommendations" }: InventoryAIProps
             <label className="text-xs text-muted-foreground">ブランド</label>
             <Select
               value={productForm.brandName}
-              onValueChange={(v) => setProductForm((p) => ({ ...p, brandName: v }))}
+              onValueChange={(v: string) => setProductForm((p) => ({ ...p, brandName: v }))}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="ブランドを選択" />
@@ -297,7 +297,7 @@ export function InventoryAI({ initialTab = "recommendations" }: InventoryAIProps
             <label className="text-xs text-muted-foreground">カテゴリ</label>
             <Select
               value={productForm.categoryName}
-              onValueChange={(v) => setProductForm((p) => ({ ...p, categoryName: v }))}
+              onValueChange={(v: string) => setProductForm((p) => ({ ...p, categoryName: v }))}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="カテゴリを選択" />
@@ -315,7 +315,7 @@ export function InventoryAI({ initialTab = "recommendations" }: InventoryAIProps
             <label className="text-xs text-muted-foreground">シーズン</label>
             <Select
               value={productForm.season}
-              onValueChange={(v) => setProductForm((p) => ({ ...p, season: v }))}
+              onValueChange={(v: string) => setProductForm((p) => ({ ...p, season: v }))}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="シーズン" />
@@ -341,7 +341,7 @@ export function InventoryAI({ initialTab = "recommendations" }: InventoryAIProps
   )
 
   const variantEditDialog = (
-    <Dialog open={editingVariant !== null} onOpenChange={(open) => !open && setEditingVariant(null)}>
+    <Dialog open={editingVariant !== null} onOpenChange={(open: boolean) => !open && setEditingVariant(null)}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>SKU編集</DialogTitle>

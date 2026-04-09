@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react"
 import { TrendingUp } from "lucide-react"
+import { PageHeader } from "@/components/page-header"
 import {
   getInventoryCatalogAction,
   getProcurementListAction,
@@ -70,11 +71,12 @@ export function ProcurementSuggestions() {
 
   return (
     <div className="p-6">
-      <div className="mb-6">
-        <p className="text-xs text-muted-foreground uppercase tracking-wide">Inventory</p>
-        <h2 className="text-2xl font-bold text-foreground">仕入れ提案</h2>
-        <p className="text-muted-foreground">過去データに基づく最適在庫提案</p>
-      </div>
+      <PageHeader
+        eyebrow="Inventory"
+        title="仕入れ提案"
+        description="過去データに基づく最適在庫提案"
+        icon={TrendingUp}
+      />
 
       <Card className="mb-6">
         <CardHeader className="space-y-1">

@@ -17,6 +17,7 @@ import {
   Trash2,
   Store,
 } from "lucide-react"
+import { PageHeader } from "@/components/page-header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -294,14 +295,12 @@ export function DataRegistration() {
 
   return (
     <div className="p-6">
-      <div className="mb-6">
-        <p className="text-xs text-muted-foreground uppercase tracking-wide">Data</p>
-        <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <Upload className="w-6 h-6 text-[#345fe1]" />
-          データ登録
-        </h2>
-        <p className="text-muted-foreground">売上・仕入・請求・年度粗利データを個別にアップロード/編集できます。</p>
-      </div>
+      <PageHeader
+        eyebrow="Data"
+        title="データ登録"
+        description="売上・仕入・請求・年度粗利データを個別にアップロード/編集できます。"
+        icon={Upload}
+      />
 
       <div className="space-y-6">
         {dataSets.map((set) => {
@@ -598,7 +597,7 @@ export function DataRegistration() {
                               <td className="px-3 py-2">
                                 <Select
                                   value={String(closingDay)}
-                                  onValueChange={(v) =>
+                                  onValueChange={(v: string) =>
                                     setSupplierDrafts((prev) => ({
                                       ...prev,
                                       [s.businessPartnerId]: { ...prev[s.businessPartnerId], closingDay: Number(v) },
@@ -618,7 +617,7 @@ export function DataRegistration() {
                               <td className="px-3 py-2">
                                 <Select
                                   value={String(paymentMonthOffset)}
-                                  onValueChange={(v) =>
+                                  onValueChange={(v: string) =>
                                     setSupplierDrafts((prev) => ({
                                       ...prev,
                                       [s.businessPartnerId]: { ...prev[s.businessPartnerId], paymentMonthOffset: Number(v) },
@@ -638,7 +637,7 @@ export function DataRegistration() {
                               <td className="px-3 py-2">
                                 <Select
                                   value={String(paymentDay)}
-                                  onValueChange={(v) =>
+                                  onValueChange={(v: string) =>
                                     setSupplierDrafts((prev) => ({
                                       ...prev,
                                       [s.businessPartnerId]: { ...prev[s.businessPartnerId], paymentDay: Number(v) },
@@ -725,7 +724,7 @@ export function DataRegistration() {
                               <td className="px-3 py-2">
                                 <Select
                                   value={String(closingDay)}
-                                  onValueChange={(v) =>
+                                  onValueChange={(v: string) =>
                                     setCustomerDrafts((prev) => ({
                                       ...prev,
                                       [c.businessPartnerId]: { ...prev[c.businessPartnerId], closingDay: Number(v) },
@@ -745,7 +744,7 @@ export function DataRegistration() {
                               <td className="px-3 py-2">
                                 <Select
                                   value={String(collectionMonthOffset)}
-                                  onValueChange={(v) =>
+                                  onValueChange={(v: string) =>
                                     setCustomerDrafts((prev) => ({
                                       ...prev,
                                       [c.businessPartnerId]: { ...prev[c.businessPartnerId], collectionMonthOffset: Number(v) },
@@ -765,7 +764,7 @@ export function DataRegistration() {
                               <td className="px-3 py-2">
                                 <Select
                                   value={String(collectionDay)}
-                                  onValueChange={(v) =>
+                                  onValueChange={(v: string) =>
                                     setCustomerDrafts((prev) => ({
                                       ...prev,
                                       [c.businessPartnerId]: { ...prev[c.businessPartnerId], collectionDay: Number(v) },

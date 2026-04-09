@@ -22,7 +22,9 @@ import {
   Building2,
   Pencil,
   Check,
+  TrendingUp,
 } from "lucide-react"
+import { PageHeader } from "@/components/page-header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Slider } from "@/components/ui/slider"
 import { Input } from "@/components/ui/input"
@@ -1176,11 +1178,12 @@ export function FinanceFlow({ initialTab = "overview" }: FinanceFlowProps) {
 
   return (
     <div className="p-6">
-      <div className="mb-6">
-        <p className="text-xs text-muted-foreground uppercase tracking-wide">Finance Flow</p>
-        <h2 className="text-2xl font-bold text-foreground">{getPageTitle()}</h2>
-        <p className="text-muted-foreground">{getPageDescription()}</p>
-      </div>
+      <PageHeader
+        eyebrow="Finance Flow"
+        title={getPageTitle()}
+        description={getPageDescription()}
+        icon={initialTab === "gantt" ? Calendar : TrendingUp}
+      />
 
       {/* Quick Stats - Only show on overview */}
       {initialTab === "overview" && (

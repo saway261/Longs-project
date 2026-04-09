@@ -7,6 +7,7 @@ import {
   Target,
   type LucideIcon,
 } from "lucide-react"
+import { PageHeader } from "@/components/page-header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -332,7 +333,6 @@ type QuadrantMatrixPageProps<T extends { name: string; sales: number; grossMargi
   title: string
   description: string
   icon: LucideIcon
-  iconClassName: string
   headerGradientClassName: string
   matrix: ReturnType<typeof buildQuadrantMatrix<T>>
   selectedQuadrantKey: QuadrantKey
@@ -359,7 +359,6 @@ function QuadrantMatrixPage<T extends { name: string; sales: number; grossMargin
   title,
   description,
   icon,
-  iconClassName,
   headerGradientClassName,
   matrix,
   selectedQuadrantKey,
@@ -385,21 +384,19 @@ function QuadrantMatrixPage<T extends { name: string; sales: number; grossMargin
 
   return (
     <div className="p-6">
-      <div className="mb-6">
-        <p className="text-xs text-muted-foreground uppercase tracking-wide">{eyebrow ?? "Inventory"}</p>
-        <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <Icon className={cn("w-6 h-6 text-[#345fe1]", iconClassName)} />
-          {title}
-        </h2>
-        <p className="text-muted-foreground">{description}</p>
-      </div>
+      <PageHeader
+        eyebrow={eyebrow ?? "Inventory"}
+        title={title}
+        description={description}
+        icon={icon}
+      />
 
       <Card className="mb-6 overflow-hidden">
         <CardHeader className={cn("border-b border-border/60", headerGradientClassName)}>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <CardTitle className="text-base flex items-center gap-2">
-                <Icon className={cn("w-4 h-4 text-[#345fe1]", iconClassName)} />
+                <Icon className="w-4 h-4 text-[#345fe1]" />
                 {title}
               </CardTitle>
               <p className="text-sm text-muted-foreground mt-1">{description}</p>
@@ -701,7 +698,6 @@ export function CustomerQuadrant() {
       title="得意先4象限マトリクス"
       description="売上額と粗利率の2軸で得意先企業を配置し、重点フォロー先と条件見直し先を切り分けます。"
       icon={Building2}
-      iconClassName="text-[#345fe1]"
       headerGradientClassName="bg-linear-to-r from-[#345fe1]/6 via-white to-emerald-50"
       matrix={matrix}
       selectedQuadrantKey={selectedQuadrantKey}
@@ -748,7 +744,6 @@ export function ProductQuadrant() {
       title="商品4象限マトリクス"
       description="売上額と粗利率の2軸で商品を配置し、主力SKUと見直し対象SKUを切り分けます。"
       icon={Shirt}
-      iconClassName="text-[#345fe1]"
       headerGradientClassName="bg-linear-to-r from-[#345fe1]/6 via-white to-sky-50"
       matrix={matrix}
       selectedQuadrantKey={selectedQuadrantKey}

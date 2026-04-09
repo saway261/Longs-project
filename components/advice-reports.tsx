@@ -3,39 +3,14 @@
 import {useMemo, useState } from "react"
 import {
   Bot,
-  Sparkles,
-  type LucideIcon,
+  FileText,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
-
-function AdvicePageHeader({
-  eyebrow = "AI Advice",
-  title,
-  description,
-  icon: Icon,
-  iconClassName,
-}: {
-  eyebrow?: string
-  title: string
-  description: string
-  icon: LucideIcon
-  iconClassName?: string
-}) {
-  return (
-    <div className="mb-6">
-      <p className="text-xs text-muted-foreground uppercase tracking-wide">{eyebrow}</p>
-      <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-        <Icon className={cn("w-6 h-6 text-[#345fe1]", iconClassName)} />
-        {title}
-      </h2>
-      <p className="text-muted-foreground">{description}</p>
-    </div>
-  )
-}
+import { PageHeader } from "@/components/page-header"
 
 type ReportLens = {
   id: "balanced" | "cashflow" | "inventory" | "sales"
@@ -267,10 +242,11 @@ export function AIAdviceManagementReport() {
 
   return (
     <div className="p-6">
-      <AdvicePageHeader
+      <PageHeader
+        eyebrow="AI Advice"
         title="AIレポート作成"
         description="考慮したいデータを選び、補足条件を加えて、AIに経営判断レポートを作成させます。"
-        icon={Sparkles}
+        icon={FileText}
       />
 
       <Card className="mb-6">

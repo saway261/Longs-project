@@ -21,7 +21,10 @@ import {
   ArrowUpDown,
   ChevronLeft,
   ChevronRight,
+  FileText,
+  BookOpen,
 } from "lucide-react"
+import { PageHeader } from "@/components/page-header"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -1029,19 +1032,12 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
 
   return (
     <div className="p-6">
-      <div className="mb-6">
-        <p className="text-xs text-muted-foreground uppercase tracking-wide">Design Studio</p>
-        <h2 className="text-2xl font-bold text-foreground">
-          {initialType === "pop" ? "POP作成" : initialType === "poster" ? "ポスター作成" : "デザインスタジオ"}
-        </h2>
-        <p className="text-muted-foreground">
-          {initialType === "pop"
-            ? "店頭POP向けのデザインを作成"
-            : initialType === "poster"
-              ? "大型印刷向けポスターを作成"
-              : "POPやポスターを簡単に作成"}
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Design Studio"
+        title={showHistory ? "作成履歴" : initialType === "pop" ? "POP作成" : initialType === "poster" ? "ポスター作成" : "デザインスタジオ"}
+        description={showHistory ? "過去に作成したデザインの一覧" : initialType === "pop" ? "店頭POP向けのデザインを作成" : initialType === "poster" ? "大型印刷向けポスターを作成" : "POPやポスターを簡単に作成"}
+        icon={showHistory ? BookOpen : initialType === "pop" ? FileText : Palette}
+      />
 
       {isPopMode ? (
         <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(0,420px)] gap-6">

@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Download, ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Package, DollarSign, Maximize2, Minimize2 } from "lucide-react"
+import { Download, ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Package, DollarSign, Maximize2, Minimize2, BarChart3 } from "lucide-react"
+import { PageHeader } from "@/components/page-header"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -229,13 +230,14 @@ export function InventoryPlanning() {
 
   return (
     <div className="p-6">
-      <div className="mb-6">
-        <p className="text-xs text-muted-foreground uppercase tracking-wide">Inventory</p>
-        <h2 className="text-2xl font-bold text-foreground">在庫計画早見表</h2>
-        <p className="text-muted-foreground">月次の在庫計画と実績の比較</p>
-      </div>
+      <PageHeader
+        eyebrow="Inventory"
+        title="在庫計画早見表"
+        description="月次の在庫計画と実績の比較"
+        icon={BarChart3}
+      />
 
-      <Dialog open={isBulkPlanOpen} onOpenChange={(open) => { setIsBulkPlanOpen(open); if (!open) setIsFullscreen(false) }}>
+      <Dialog open={isBulkPlanOpen} onOpenChange={(open: boolean) => { setIsBulkPlanOpen(open); if (!open) setIsFullscreen(false) }}>
         <DialogContent
           fullscreen={isFullscreen}
           className={cn(
@@ -424,7 +426,7 @@ export function InventoryPlanning() {
               </Button>
               <Select
                 value={selectedYear !== null ? String(selectedYear) : ""}
-                onValueChange={(v) => setSelectedYear(Number(v))}
+                onValueChange={(v: string) => setSelectedYear(Number(v))}
               >
                 <SelectTrigger className="w-30">
                   <SelectValue />

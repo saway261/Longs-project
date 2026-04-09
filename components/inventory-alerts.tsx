@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { AlertTriangle, Package, TrendingDown, Clock } from "lucide-react"
+import { AlertTriangle, Bell, Package, TrendingDown, Clock } from "lucide-react"
+import { PageHeader } from "@/components/page-header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -74,14 +75,12 @@ export function InventoryAlerts() {
 
   return (
     <div className="p-6">
-      <div className="mb-6">
-        <p className="text-xs text-muted-foreground uppercase tracking-wide">Inventory</p>
-        <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <AlertTriangle className="w-6 h-6 text-[#345fe1]" />
-          在庫アラート分析
-        </h2>
-        <p className="text-muted-foreground">在庫不足・過剰・廃品リスクを分類し、優先対応すべきアラートを確認できます。</p>
-      </div>
+      <PageHeader
+        eyebrow="Inventory"
+        title="在庫アラート分析"
+        description="在庫不足・過剰・廃品リスクを分類し、優先対応すべきアラートを確認できます。"
+        icon={Bell}
+      />
 
       <Card>
         <CardHeader>

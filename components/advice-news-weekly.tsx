@@ -12,12 +12,12 @@ import {
   Briefcase,
   ChevronLeft,
   ChevronRight,
-  type LucideIcon,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { PageHeader } from "@/components/page-header"
 
 // AI Advice data - weekly summaries
 const weeklyAdvices = [
@@ -220,30 +220,6 @@ const inventoryDataInsights = [
   },
 ]
 
-function AdvicePageHeader({
-  eyebrow = "AI Advice",
-  title,
-  description,
-  icon: Icon,
-  iconClassName,
-}: {
-  eyebrow?: string
-  title: string
-  description: string
-  icon: LucideIcon
-  iconClassName?: string
-}) {
-  return (
-    <div className="mb-6">
-      <p className="text-xs text-muted-foreground uppercase tracking-wide">{eyebrow}</p>
-      <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-        <Icon className={cn("w-6 h-6 text-[#345fe1]", iconClassName)} />
-        {title}
-      </h2>
-      <p className="text-muted-foreground">{description}</p>
-    </div>
-  )
-}
 
 export function AIAdviceWeeklyNews() {
   const [selectedWeekIndex, setSelectedWeekIndex] = useState(0)
@@ -251,7 +227,8 @@ export function AIAdviceWeeklyNews() {
 
   return (
     <div className="p-6">
-      <AdvicePageHeader
+      <PageHeader
+        eyebrow="AI Advice"
         title="週次ニュース"
         description="天気、気温、国際情勢などの幅広い視点から、週次の経営示唆を確認します。"
         icon={Calendar}

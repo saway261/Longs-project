@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { Package, BarChart2, ShoppingCart } from "lucide-react"
+import { Package, BarChart2, ShoppingCart, BarChart3 } from "lucide-react"
+import { PageHeader } from "@/components/page-header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -136,13 +137,12 @@ export function InventoryInsights() {
 
   return (
     <div className="p-6">
-      <div className="mb-6">
-        <p className="text-xs text-muted-foreground uppercase tracking-wide">Inventory</p>
-        <h2 className="text-2xl font-bold text-foreground">在庫データ分析</h2>
-        <p className="text-muted-foreground">
-          カテゴリ構成・前年比較・回転率・在庫効率・アラート分析をまとめて確認できます。
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Inventory"
+        title="在庫データ分析"
+        description="カテゴリ構成・前年比較・回転率・在庫効率・アラート分析をまとめて確認できます。"
+        icon={BarChart3}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-6">
         {/* 売上構成 */}

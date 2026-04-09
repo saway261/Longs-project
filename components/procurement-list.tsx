@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import { Trash2, ClipboardList, CheckCircle } from "lucide-react"
+import { Trash2, Table, CheckCircle } from "lucide-react"
+import { PageHeader } from "@/components/page-header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -76,15 +77,13 @@ export function ProcurementList() {
 
   return (
     <div className="p-6">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-xs text-muted-foreground uppercase tracking-wide">Inventory</p>
-          <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <ClipboardList className="w-6 h-6 text-[#345fe1]" />
-            仕入れリスト
-          </h2>
-          <p className="text-muted-foreground">仕入れ提案から追加した発注候補をまとめて確認できます。</p>
-        </div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <PageHeader
+          eyebrow="Inventory"
+          title="仕入れリスト"
+          description="仕入れ提案から追加した発注候補をまとめて確認できます。"
+          icon={Table}
+        />
         <Button
           variant="outline"
           onClick={handleClear}

@@ -1,37 +1,10 @@
 "use client"
 
-import {
-  Globe,
-  type LucideIcon,
-} from "lucide-react"
+import { Globe } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { PageHeader } from "@/components/page-header"
 import { cn } from "@/lib/utils"
-
-function AdvicePageHeader({
-  eyebrow = "AI Advice",
-  title,
-  description,
-  icon: Icon,
-  iconClassName,
-}: {
-  eyebrow?: string
-  title: string
-  description: string
-  icon: LucideIcon
-  iconClassName?: string
-}) {
-  return (
-    <div className="mb-6">
-      <p className="text-xs text-muted-foreground uppercase tracking-wide">{eyebrow}</p>
-      <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-        <Icon className={cn("w-6 h-6 text-[#345fe1]", iconClassName)} />
-        {title}
-      </h2>
-      <p className="text-muted-foreground">{description}</p>
-    </div>
-  )
-}
 
 const newsCategories = [
   {
@@ -116,7 +89,8 @@ const newsCategories = [
 export function AIAdviceBusinessNews() {
   return (
     <div className="p-6">
-      <AdvicePageHeader
+      <PageHeader
+        eyebrow="AI Advice"
         title="経営判断に直結するニュース"
         description="為替、原材料、物流、競合の変化を一覧で確認し、経営判断に必要な外部環境を把握します。"
         icon={Globe}

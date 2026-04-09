@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { Download, FileText, Loader2, Table } from "lucide-react"
+import { PageHeader } from "@/components/page-header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -129,15 +130,13 @@ export function DataHub() {
 
   return (
     <div className="p-6">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-xs text-muted-foreground uppercase tracking-wide">Data</p>
-          <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <Table className="w-6 h-6 text-[#345fe1]" />
-            データ一覧
-          </h2>
-          <p className="text-muted-foreground">アップロード済みデータの確認と編集をまとめて行えます。</p>
-        </div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <PageHeader
+          eyebrow="Data"
+          title="データ一覧"
+          description="アップロード済みデータの確認と編集をまとめて行えます。"
+          icon={Table}
+        />
         <Button variant="outline" className="text-[#345fe1] border-[#345fe1]" onClick={handleExportCsv}>
           <Download className="w-4 h-4 mr-2 text-[#345fe1]" />
           CSV出力
