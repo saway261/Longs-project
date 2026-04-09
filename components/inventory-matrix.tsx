@@ -328,7 +328,7 @@ type MatrixTableColumn<T extends { sales: number; grossMargin: number }> = {
 }
 
 type QuadrantMatrixPageProps<T extends { name: string; sales: number; grossMargin: number; grossProfit: number }> = {
-  eyebrow: string
+  eyebrow?: string
   title: string
   description: string
   icon: LucideIcon
@@ -352,31 +352,6 @@ function getQuadrantAreaOpacity(selectedKey: QuadrantKey, quadrantKey: QuadrantK
 
 function getPointOpacity(selectedKey: QuadrantKey, quadrantKey: QuadrantKey) {
   return selectedKey === quadrantKey ? 0.95 : 0.2
-}
-
-function AdvicePageHeader({
-  eyebrow = "AI Advice",
-  title,
-  description,
-  icon: Icon,
-  iconClassName,
-}: {
-  eyebrow?: string
-  title: string
-  description: string
-  icon: LucideIcon
-  iconClassName?: string
-}) {
-  return (
-    <div className="mb-6">
-      <p className="text-xs text-muted-foreground uppercase tracking-wide">{eyebrow}</p>
-      <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-        <Icon className={cn("w-6 h-6 text-[#345fe1]", iconClassName)} />
-        {title}
-      </h2>
-      <p className="text-muted-foreground">{description}</p>
-    </div>
-  )
 }
 
 function QuadrantMatrixPage<T extends { name: string; sales: number; grossMargin: number; grossProfit: number }>({
@@ -410,13 +385,14 @@ function QuadrantMatrixPage<T extends { name: string; sales: number; grossMargin
 
   return (
     <div className="p-6">
-      <AdvicePageHeader
-        eyebrow={eyebrow}
-        title={title}
-        description={description}
-        icon={Icon}
-        iconClassName={iconClassName}
-      />
+      <div className="mb-6">
+        <p className="text-xs text-muted-foreground uppercase tracking-wide">{eyebrow ?? "Inventory"}</p>
+        <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+          <Icon className={cn("w-6 h-6 text-[#345fe1]", iconClassName)} />
+          {title}
+        </h2>
+        <p className="text-muted-foreground">{description}</p>
+      </div>
 
       <Card className="mb-6 overflow-hidden">
         <CardHeader className={cn("border-b border-border/60", headerGradientClassName)}>
@@ -715,14 +691,13 @@ function QuadrantMatrixPage<T extends { name: string; sales: number; grossMargin
   )
 }
 
-export function AIAdviceCustomerQuadrantPage() {
+export function CustomerQuadrant() {
   const [selectedQuadrantKey, setSelectedQuadrantKey] = useState<QuadrantKey>("highSalesHighMargin")
   const [selectedQuadrantPage, setSelectedQuadrantPage] = useState(1)
   const matrix = useMemo(() => buildQuadrantMatrix(customerMatrixData, quadrantDefinitions), [])
 
   return (
     <QuadrantMatrixPage
-      eyebrow="AI Advice"
       title="得意先4象限マトリクス"
       description="売上額と粗利率の2軸で得意先企業を配置し、重点フォロー先と条件見直し先を切り分けます。"
       icon={Building2}
@@ -763,14 +738,13 @@ export function AIAdviceCustomerQuadrantPage() {
   )
 }
 
-export function AIAdviceProductQuadrantPage() {
+export function ProductQuadrant() {
   const [selectedQuadrantKey, setSelectedQuadrantKey] = useState<QuadrantKey>("highSalesHighMargin")
   const [selectedQuadrantPage, setSelectedQuadrantPage] = useState(1)
   const matrix = useMemo(() => buildQuadrantMatrix(productMatrixData, productQuadrantDefinitions), [])
 
   return (
     <QuadrantMatrixPage
-      eyebrow="AI Advice"
       title="商品4象限マトリクス"
       description="売上額と粗利率の2軸で商品を配置し、主力SKUと見直し対象SKUを切り分けます。"
       icon={Shirt}

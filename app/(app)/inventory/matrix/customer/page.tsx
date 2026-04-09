@@ -1,5 +1,5 @@
-import { AIAdviceCustomerQuadrantPage } from "@/components/inventory-matrix"
+import { CustomerQuadrant } from "@/components/inventory-matrix"
 
-export default function InventoryCatalogPage() {
-  return <AIAdviceCustomerQuadrantPage />
+export default function InventoryCustomerQuadrantPage() {
+  return <CustomerQuadrant />
 }

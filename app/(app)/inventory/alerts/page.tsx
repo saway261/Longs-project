@@ -1,5 +1,5 @@
-import { InventoryAlertsPage } from "@/components/inventory-alerts"
+import { InventoryAlerts } from "@/components/inventory-alerts"
 
-export default function InventoryCatalogPage() {
-  return <InventoryAlertsPage />
+export default function InventoryAlertsPage() {
+  return <InventoryAlerts />
 }

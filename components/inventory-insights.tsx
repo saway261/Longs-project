@@ -57,7 +57,7 @@ const renderCategoryLabel = (props: any) => {
   )
 }
 
-export function InventoryAIInsights() {
+export function InventoryInsights() {
   const [goodPage, setGoodPage] = useState(1)
   const [forecastCategory, setForecastCategory] = useState<string>("全体")
   const [compositionGroupBy, setCompositionGroupBy] = useState<"category" | "brand">("category")
@@ -137,7 +137,7 @@ export function InventoryAIInsights() {
   return (
     <div className="p-6">
       <div className="mb-6">
-        <p className="text-xs text-muted-foreground uppercase tracking-wide">Inventory AI</p>
+        <p className="text-xs text-muted-foreground uppercase tracking-wide">Inventory</p>
         <h2 className="text-2xl font-bold text-foreground">在庫データ分析</h2>
         <p className="text-muted-foreground">
           カテゴリ構成・前年比較・回転率・在庫効率・アラート分析をまとめて確認できます。

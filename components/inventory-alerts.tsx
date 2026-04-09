@@ -35,7 +35,7 @@ const getAlertIcon = (type: InventoryAlertItem["type"]) => {
   }
 }
 
-export function InventoryAlertsPage() {
+export function InventoryAlerts() {
   const [alertType, setAlertType] = useState<InventoryAlertItem["type"]>("low_stock")
   const [alertPage, setAlertPage] = useState(1)
   const [alertData, setAlertData] = useState<InventoryAlertItem[]>([])
@@ -75,7 +75,7 @@ export function InventoryAlertsPage() {
   return (
     <div className="p-6">
       <div className="mb-6">
-        <p className="text-xs text-muted-foreground uppercase tracking-wide">Inventory Data</p>
+        <p className="text-xs text-muted-foreground uppercase tracking-wide">Inventory</p>
         <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
           <AlertTriangle className="w-6 h-6 text-[#345fe1]" />
           在庫アラート分析

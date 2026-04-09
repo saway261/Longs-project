@@ -78,7 +78,7 @@ export function ProcurementList() {
     <div className="p-6">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-xs text-muted-foreground uppercase tracking-wide">Inventory AI</p>
+          <p className="text-xs text-muted-foreground uppercase tracking-wide">Inventory</p>
           <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <ClipboardList className="w-6 h-6 text-[#345fe1]" />
             仕入れリスト

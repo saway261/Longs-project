@@ -230,7 +230,7 @@ export function InventoryPlanning() {
   return (
     <div className="p-6">
       <div className="mb-6">
-        <p className="text-xs text-muted-foreground uppercase tracking-wide">Inventory AI</p>
+        <p className="text-xs text-muted-foreground uppercase tracking-wide">Inventory</p>
         <h2 className="text-2xl font-bold text-foreground">在庫計画早見表</h2>
         <p className="text-muted-foreground">月次の在庫計画と実績の比較</p>
       </div>

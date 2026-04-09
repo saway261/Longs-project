@@ -1,5 +1,5 @@
 import { ProcurementList } from "@/components/procurement-list"
 
-export default function ProcurementPage() {
+export default function ProcurementListPage() {
   return <ProcurementList />
 }
