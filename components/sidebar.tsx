@@ -30,7 +30,7 @@ import {
 import { cn } from "@/lib/utils"
 import { getRoleLabel } from "@/src/lib/role-labels"
 
-type SectionId = "design" | "inventory" | "advice" | "finance" | "data"
+type SectionId = "design" | "inventory" | "advice" | "finance"
 
 const navItems = [
   {
@@ -75,17 +75,6 @@ const navItems = [
     ],
   },
   {
-    id: "data" as SectionId,
-    label: "データ",
-    sublabel: "登録・編集",
-    basePath: "/data",
-    icon: Upload,
-    subItems: [
-      { id: "data-main", label: "データ一覧", icon: Table, href: "/data" },
-      { id: "data-import", label: "データ登録", icon: Upload, href: "/data/import" },
-    ],
-  },
-  {
     id: "finance" as SectionId,
     label: "ファイナンスフロー",
     sublabel: "予算管理",
@@ -106,15 +95,16 @@ export function Sidebar({ user }: { user: UserInfo }) {
 
   // パスベースのアクティブ判定
   const activeSectionItem = navItems.find((item) => pathname.startsWith(item.basePath))
-  const activeSection = activeSectionItem?.id ?? "design"
-  const activeSubItem = navItems.flatMap((i) => i.subItems).find((sub) => {
-    // /data は完全一致、それ以外は前方一致
-    if (sub.href === "/data") return pathname === "/data"
-    if (sub.href === "/data/import") return pathname.startsWith("/data/import")
-    return pathname.startsWith(sub.href)
-  })
+  const activeSection = activeSectionItem?.id
+  const activeSubItem = navItems.flatMap((i) => i.subItems).find((sub) =>
+    pathname.startsWith(sub.href)
+  )
+  const isDataMainActive = pathname === "/data"
+  const isDataImportActive = pathname.startsWith("/data/import")
 
-  const [expandedSections, setExpandedSections] = useState<SectionId[]>([activeSection])
+  const [expandedSections, setExpandedSections] = useState<SectionId[]>(
+    activeSection ? [activeSection] : []
+  )
   const [isHovering, setIsHovering] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
 
@@ -161,7 +151,7 @@ export function Sidebar({ user }: { user: UserInfo }) {
         className="group/sidebar w-24.5 hover:w-89.5 transition-[width] duration-300 ease-in-out bg-sidebar text-sidebar-foreground flex flex-col h-full overflow-hidden relative z-20 shadow-[4px_0_16px_rgba(0,0,0,0.08)] border-r border-sidebar-border"
         onMouseEnter={() => {
           setIsHovering(true)
-          setExpandedSections([activeSection])
+          setExpandedSections(activeSection ? [activeSection] : [])
         }}
         onMouseLeave={() => {
           setIsHovering(false)
@@ -266,6 +256,38 @@ export function Sidebar({ user }: { user: UserInfo }) {
           <ul className="space-y-1">
             <li>
               <button
+                onClick={() => router.push("/data")}
+                className={cn(
+                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left",
+                  isDataMainActive
+                    ? "bg-[#345fe1]/10 text-[#345fe1] font-medium"
+                    : "text-sidebar-foreground/80 hover:bg-sidebar-accent"
+                )}
+              >
+                <Table className="w-5 h-5" />
+                <span className="text-sm overflow-hidden w-0 group-hover/sidebar:w-30 opacity-0 group-hover/sidebar:opacity-100 whitespace-nowrap pointer-events-none transition-[width,opacity] duration-200 ease-in-out delay-75">
+                  データ一覧
+                </span>
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => router.push("/data/import")}
+                className={cn(
+                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left",
+                  isDataImportActive
+                    ? "bg-[#345fe1]/10 text-[#345fe1] font-medium"
+                    : "text-sidebar-foreground/80 hover:bg-sidebar-accent"
+                )}
+              >
+                <Upload className="w-5 h-5" />
+                <span className="text-sm overflow-hidden w-0 group-hover/sidebar:w-30 opacity-0 group-hover/sidebar:opacity-100 whitespace-nowrap pointer-events-none transition-[width,opacity] duration-200 ease-in-out delay-75">
+                  データ登録
+                </span>
+              </button>
+            </li>
+            <li>
+              <button
                 onClick={handleCalculationRulesNavigation}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-foreground/80 hover:bg-sidebar-accent transition-colors text-left"
               >
@@ -276,7 +298,7 @@ export function Sidebar({ user }: { user: UserInfo }) {
               </button>
             </li>
             <li>
-              <button className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sidebar-foreground/80 hover:bg-sidebar-accent transition-colors text-left">
+              <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-foreground/80 hover:bg-sidebar-accent transition-colors text-left">
                 <HelpCircle className="w-5 h-5" />
                 <span className="text-sm overflow-hidden w-0 group-hover/sidebar:w-30 opacity-0 group-hover/sidebar:opacity-100 whitespace-nowrap pointer-events-none transition-[width,opacity] duration-200 ease-in-out delay-75">
                   ヘルプ
