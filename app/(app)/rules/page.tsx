@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Calendar, Settings2, Plus, Trash2, Loader2, RefreshCcw } from "lucide-react"
+import { Calendar, Settings2, Plus, Trash2, Loader2, RefreshCcw, SlidersHorizontal } from "lucide-react"
 import { PageHeader } from "@/components/page-header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -30,7 +30,7 @@ const TURNOVER_PERIOD_OPTIONS = [
 // ── カテゴリ編集用の行型（新規追加行は id が未定） ────────────────────────
 type DraftRow = { key: string; id?: string; categoryCode: string; name: string; sellThroughDays: number }
 
-export default function SettingsPage() {
+export default function CalculationRulesPage() {
   // ── カテゴリ状態 ──────────────────────────────────────────────────────────
   const [categories, setCategories] = useState<CategoryDTO[]>([])
   const [categoryLoading, setCategoryLoading] = useState(true)
@@ -221,8 +221,9 @@ export default function SettingsPage() {
       <div className="max-w-6xl mx-auto px-6 py-10 space-y-6">
         <PageHeader
           eyebrow="Settings"
-          title="システム設定"
-          description="カテゴリ別の売り切り期限など、基本設定を管理します。"
+          title="ルール管理"
+          description="カテゴリ別の売り切り期限や在庫回転率の計算期間など、計算ルールを管理します。"
+          icon={SlidersHorizontal}
         />
 
         {/* ── カテゴリ別 売り切り期限設定 ── */}

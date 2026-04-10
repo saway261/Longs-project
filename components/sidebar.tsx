@@ -25,6 +25,7 @@ import {
   Building2,
   Globe,
   Sparkles,
+  SlidersHorizontal,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getRoleLabel } from "@/src/lib/role-labels"
@@ -130,8 +131,8 @@ export function Sidebar({ user }: { user: UserInfo }) {
     router.push(href)
   }
 
-  const handleSettingsNavigation = () => {
-    router.push("/settings")
+  const handleCalculationRulesNavigation = () => {
+    router.push("/rules")
   }
 
   const handleLogout = async () => {
@@ -260,17 +261,17 @@ export function Sidebar({ user }: { user: UserInfo }) {
         {/* Preferences */}
         <div className="p-3 lg:p-4">
           <p className="text-xs font-medium text-sidebar-foreground/50 mb-3 px-2 opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-150 delay-150">
-            設定
+            全般
           </p>
           <ul className="space-y-1">
             <li>
               <button
-                onClick={handleSettingsNavigation}
+                onClick={handleCalculationRulesNavigation}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-foreground/80 hover:bg-sidebar-accent transition-colors text-left"
               >
-                <Settings className="w-5 h-5" />
+                <SlidersHorizontal className="w-5 h-5" />
                 <span className="text-sm overflow-hidden w-0 group-hover/sidebar:w-30 opacity-0 group-hover/sidebar:opacity-100 whitespace-nowrap pointer-events-none transition-[width,opacity] duration-200 ease-in-out delay-75">
-                  設定
+                  ルール管理
                 </span>
               </button>
             </li>
