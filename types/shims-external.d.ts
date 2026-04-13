@@ -60,7 +60,21 @@ declare module "react-resizable-panels" {
 
 declare module "sonner" {
   export const Toaster: any
-  export function toast(...args: any[]): void
+  const toast: {
+    (...args: any[]): any
+    success(message: any, data?: any): any
+    error(message: any, data?: any): any
+    info(message: any, data?: any): any
+    warning(message: any, data?: any): any
+    loading(message: any, data?: any): any
+    dismiss(id?: any): any
+    promise(promise: any, data?: any): any
+    message(message: any, data?: any): any
+    custom(jsx: any, data?: any): any
+    getHistory(): any[]
+    getToasts(): any[]
+  }
+  export { toast }
 }
 
 declare module "@radix-ui/*"

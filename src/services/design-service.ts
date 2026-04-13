@@ -17,6 +17,8 @@ export type DesignAssetDTO = {
   ratio: string | null
   imageUrl: string | null
   createdAt: string
+  createdBy: string | null
+  createdByName: string
 }
 
 // ============================================================
@@ -84,10 +86,11 @@ export async function generateDesignImage(
 // 一覧取得
 // ============================================================
 
-export async function getDesignAssets(userId: string): Promise<DesignAssetDTO[]> {
+export async function getDesignAssets(_userId: string): Promise<DesignAssetDTO[]> {
   const assets = await prisma.designAsset.findMany({
-    where: { createdBy: userId, deletedAt: null },
+    where: { deletedAt: null },
     orderBy: { createdAt: "desc" },
+    include: { creator: true },
   })
   return assets.map(toDTO)
 }
@@ -142,6 +145,8 @@ function toDTO(asset: {
   ratio: string | null
   imageUrl: string | null
   createdAt: Date
+  createdBy?: string | null
+  creator?: { name: string | null; email: string } | null
 }): DesignAssetDTO {
   return {
     id: asset.id,
@@ -153,5 +158,7 @@ function toDTO(asset: {
     ratio: asset.ratio,
     imageUrl: asset.imageUrl,
     createdAt: asset.createdAt.toISOString(),
+    createdBy: asset.createdBy ?? null,
+    createdByName: asset.creator?.name || asset.creator?.email || "不明",
   }
 }

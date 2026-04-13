@@ -16,6 +16,7 @@ enum ImportDataset {
   payables
   receivables
   gross_profit
+  inventory_snapshot
 
   @@map("import_dataset")
 }
@@ -58,6 +59,13 @@ enum DesignType {
   @@map("design_type")
 }
 
+enum UserRole {
+  admin
+  general
+
+  @@map("user_role")
+}
+
 // ============================================================
 // ユーザー・認証
 // ============================================================
@@ -67,13 +75,14 @@ model UserAccount {
   email        String   @unique
   name         String?
   passwordHash String?  @map("password_hash")
-  role         String   @default("admin")
+  role         UserRole @default(general)
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
 
   procurementLists ProcurementList[]
   designAssets     DesignAsset[]
   sessions         Session[]
+  dataImports      DataImport[]
 
   @@map("user_account")
 }
@@ -96,10 +105,12 @@ model Session {
 // ============================================================
 
 model ProductCategory {
-  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name            String   @unique
-  sellThroughDays Int      @default(60) @map("sell_through_days")
-  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  categoryCode    String?   @unique @map("category_code")
+  name            String    @unique
+  sellThroughDays Int       @default(60) @map("sell_through_days")
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  deletedAt       DateTime? @map("deleted_at") @db.Timestamptz()
 
   products Product[]
 
@@ -117,13 +128,23 @@ model ReservePolicy {
   @@map("reserve_policy")
 }
 
+
+model SystemSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+
+  @@map("system_setting")
+}
+
 // ============================================================
 // 商品・在庫
 // ============================================================
 
 model ProductBrand {
-  id   String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name String @unique
+  id        String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  brandCode String? @unique @map("brand_code")
+  name      String  @unique
 
   products Product[]
 
@@ -131,16 +152,15 @@ model ProductBrand {
 }
 
 model Product {
-  jan          String   @id
-  sku          String?  @unique
-  name         String
-  categoryId   String?  @map("category_id") @db.Uuid
-  brandId      String?  @map("brand_id") @db.Uuid
-  season       String?
-  manufacturer String?
-  status       String?
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
-  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productCode String   @unique @map("product_code")
+  name        String
+  categoryId  String?  @map("category_id") @db.Uuid
+  brandId     String?  @map("brand_id") @db.Uuid
+  season      String?
+  status      String?
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
 
   category ProductCategory? @relation(fields: [categoryId], references: [id])
   brand    ProductBrand?     @relation(fields: [brandId], references: [id])
@@ -151,17 +171,20 @@ model Product {
 
 model ProductVariant {
   id         String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  productJan String  @map("product_jan")
-  variantSku String? @unique @map("variant_sku")
+  productId  String  @map("product_id") @db.Uuid
+  variantSku String? @map("variant_sku")
   color      String?
+  colorCode  String? @map("color_code")
   size       String?
+  sizeCode   String? @map("size_code")
   janCode    String? @map("jan_code")
   priceYen   BigInt? @map("price_yen")
 
-  product          Product           @relation(fields: [productJan], references: [jan])
+  product          Product           @relation(fields: [productId], references: [id])
   inventoryStocks  InventoryStock[]
   procurementItems ProcurementItem[]
 
+  @@unique([productId, color, size])
   @@map("product_variant")
 }
 
@@ -214,6 +237,7 @@ model ProcurementItem {
   priceYen     BigInt?           @map("price_yen")
   status       ProcurementStatus @default(normal)
   addedAt      DateTime          @default(now()) @map("added_at") @db.Timestamptz()
+  orderedAt    DateTime?         @map("ordered_at") @db.Timestamptz()
 
   list    ProcurementList @relation(fields: [listId], references: [id], onDelete: Cascade)
   variant ProductVariant  @relation(fields: [variantId], references: [id])
@@ -254,76 +278,95 @@ model InventoryPlanMonth {
 }
 
 // ============================================================
+// 取引先マスタ
+// ============================================================
+
+model BusinessPartner {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+
+  supplier          Supplier?
+  customer          Customer?
+  recurringEntries  RecurringEntry[]
+  salesFacts        SalesFact[]
+  payablesFacts     PayablesFact[]
+  receivablesFacts  ReceivablesFact[]
+
+  @@map("business_partner")
+}
+
+model Supplier {
+  businessPartnerId  String   @id @map("business_partner_id") @db.Uuid
+  closingDay         Int      @default(31) @map("closing_day")
+  paymentMonthOffset Int      @default(1)  @map("payment_month_offset")
+  paymentDay         Int      @default(31) @map("payment_day")
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt          DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+
+  businessPartner BusinessPartner @relation(fields: [businessPartnerId], references: [id], onDelete: Cascade)
+
+  @@map("supplier")
+}
+
+model Customer {
+  businessPartnerId     String   @id @map("business_partner_id") @db.Uuid
+  closingDay            Int      @default(31) @map("closing_day")
+  collectionMonthOffset Int      @default(1)  @map("collection_month_offset")
+  collectionDay         Int      @default(31) @map("collection_day")
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt             DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+
+  businessPartner BusinessPartner @relation(fields: [businessPartnerId], references: [id], onDelete: Cascade)
+
+  @@map("customer")
+}
+
+// ============================================================
 // 財務管理
 // ============================================================
 
-model Counterparty {
-  id   String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name String
-  type String @default("other")
+model RecurringEntry {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  businessPartnerId String?   @map("business_partner_id") @db.Uuid
+  description       String?
+  amountYen         BigInt    @map("amount_yen")
+  flow              FlowType
+  category          String
+  cycle             String?
+  offsetMonths      Int       @default(0) @map("offset_months")
+  dueDay            Int       @map("due_day")
+  seasonality       Decimal[] @db.Decimal
+  sortOrder         Int       @default(0) @map("sort_order")
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  deletedAt         DateTime? @map("deleted_at") @db.Timestamptz()
 
-  financeSchedules FinanceSchedule[]
+  businessPartner BusinessPartner?       @relation(fields: [businessPartnerId], references: [id])
+  tagMaps         RecurringEntryTagMap[]
 
-  @@map("counterparty")
+  @@index([businessPartnerId])
+  @@map("recurring_entry")
 }
 
-model FinanceSchedule {
-  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  counterpartyId String?   @map("counterparty_id") @db.Uuid
-  description    String?
-  amountYen      BigInt    @map("amount_yen")
-  flow           FlowType
-  category       String
-  cycle          String?
-  offsetMonths   Int       @default(0) @map("offset_months")
-  dueDay         Int       @map("due_day")
-  seasonality    Decimal[] @db.Decimal
-  isFixed        Boolean   @default(false) @map("is_fixed")
-  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz()
-
-  counterparty Counterparty?           @relation(fields: [counterpartyId], references: [id])
-  events       FinanceEvent[]
-  tagMaps      FinanceScheduleTagMap[]
-
-  @@index([counterpartyId])
-  @@map("finance_schedule")
-}
-
-model FinanceScheduleTag {
+model RecurringEntryTag {
   id   String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name String @unique
 
-  tagMaps FinanceScheduleTagMap[]
+  tagMaps RecurringEntryTagMap[]
 
-  @@map("finance_schedule_tag")
+  @@map("recurring_entry_tag")
 }
 
-model FinanceScheduleTagMap {
-  scheduleId String @map("schedule_id") @db.Uuid
-  tagId      String @map("tag_id") @db.Uuid
+model RecurringEntryTagMap {
+  entryId String @map("entry_id") @db.Uuid
+  tagId   String @map("tag_id") @db.Uuid
 
-  schedule FinanceSchedule    @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
-  tag      FinanceScheduleTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  entry RecurringEntry    @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  tag   RecurringEntryTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
-  @@id([scheduleId, tagId])
-  @@map("finance_schedule_tag_map")
-}
-
-model FinanceEvent {
-  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  scheduleId   String?   @map("schedule_id") @db.Uuid
-  dueDate      DateTime  @map("due_date") @db.Date
-  amountYen    BigInt    @map("amount_yen")
-  flow         FlowType
-  category     String?
-  status       String    @default("planned")
-  actualPaidAt DateTime? @map("actual_paid_at") @db.Date
-  note         String?
-
-  schedule FinanceSchedule? @relation(fields: [scheduleId], references: [id])
-
-  @@index([dueDate])
-  @@map("finance_event")
+  @@id([entryId, tagId])
+  @@map("recurring_entry_tag_map")
 }
 
 // ============================================================
@@ -338,20 +381,26 @@ model DataImport {
   summary       String?
   note          String?
   importedAt    DateTime      @default(now()) @map("imported_at") @db.Timestamptz()
+  updatedAt     DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+  deletedAt     DateTime?     @map("deleted_at") @db.Timestamptz()
+  importedBy    String?       @map("imported_by") @db.Uuid
   rowsTotal     Int?          @map("rows_total")
   rowsSuccess   Int?          @map("rows_success")
   rowsSkipped   Int?          @map("rows_skipped")
   warningsCount Int?          @map("warnings_count")
   errorsCount   Int?          @map("errors_count")
 
-  rows             DataImportRow[]
-  issues           DataImportIssue[]
-  salesFacts       SalesFact[]
-  payablesFacts    PayablesFact[]
-  receivablesFacts ReceivablesFact[]
-  grossProfitFacts GrossProfitFact[]
+  importer               UserAccount?           @relation(fields: [importedBy], references: [id])
+  rows                   DataImportRow[]
+  issues                 DataImportIssue[]
+  salesFacts             SalesFact[]
+  payablesFacts          PayablesFact[]
+  receivablesFacts       ReceivablesFact[]
+  grossProfitFacts       GrossProfitFact[]
+  inventorySnapshotFacts InventorySnapshotFact[]
 
   @@index([dataset, importedAt(sort: Desc)])
+  @@index([importedBy])
   @@map("data_import")
 }
 
@@ -386,6 +435,7 @@ model DataImportIssue {
 model SalesFact {
   id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   importId              String?   @map("import_id") @db.Uuid
+  businessPartnerId     String?   @map("business_partner_id") @db.Uuid
   customerCategory1Code String?   @map("customer_category1_code")
   customerCategory1Name String?   @map("customer_category1_name")
   brandCode             String?   @map("brand_code")
@@ -410,17 +460,23 @@ model SalesFact {
   returnYen             BigInt?   @map("return_yen")
   grossProfitYen        BigInt?   @map("gross_profit_yen")
   grossProfitRate       Decimal?  @map("gross_profit_rate") @db.Decimal(5, 2)
+  updatedAt             DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+  deletedAt             DateTime? @map("deleted_at") @db.Timestamptz()
 
-  import DataImport? @relation(fields: [importId], references: [id])
+  import          DataImport?      @relation(fields: [importId], references: [id])
+  businessPartner BusinessPartner? @relation(fields: [businessPartnerId], references: [id])
 
   @@index([periodYm])
+  @@index([businessPartnerId])
   @@map("sales_fact")
 }
 
 model PayablesFact {
-  id                 String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  importId           String? @map("import_id") @db.Uuid
-  vendorName         String? @map("vendor_name")
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  importId           String?   @map("import_id") @db.Uuid
+  businessPartnerId  String?   @map("business_partner_id") @db.Uuid
+  periodYm           DateTime? @map("period_ym") @db.Date
+  vendorName         String?   @map("vendor_name")
   vendorShort        String? @map("vendor_short")
   prevBalanceYen     BigInt? @map("prev_balance_yen")
   paymentYen         BigInt? @map("payment_yen")
@@ -441,16 +497,22 @@ model PayablesFact {
   discount2Yen       BigInt? @map("discount2_yen")
   feeYen             BigInt? @map("fee_yen")
   other2Yen          BigInt? @map("other2_yen")
+  updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+  deletedAt          DateTime? @map("deleted_at") @db.Timestamptz()
 
-  import DataImport? @relation(fields: [importId], references: [id])
+  import          DataImport?      @relation(fields: [importId], references: [id])
+  businessPartner BusinessPartner? @relation(fields: [businessPartnerId], references: [id])
 
+  @@index([businessPartnerId, periodYm])
   @@map("payables_fact")
 }
 
 model ReceivablesFact {
-  id                    String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  importId              String? @map("import_id") @db.Uuid
-  staffName             String? @map("staff_name")
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  importId              String?   @map("import_id") @db.Uuid
+  businessPartnerId     String?   @map("business_partner_id") @db.Uuid
+  periodYm              DateTime? @map("period_ym") @db.Date
+  staffName             String?   @map("staff_name")
   customerName          String? @map("customer_name")
   customerShort         String? @map("customer_short")
   prevBalanceYen        BigInt? @map("prev_balance_yen")
@@ -476,10 +538,14 @@ model ReceivablesFact {
   npPaymentsYen         BigInt? @map("np_payments_yen")
   creditLimitBalanceYen BigInt? @map("credit_limit_balance_yen")
   notes                 String?
+  updatedAt             DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+  deletedAt             DateTime? @map("deleted_at") @db.Timestamptz()
 
-  import DataImport? @relation(fields: [importId], references: [id])
+  import          DataImport?      @relation(fields: [importId], references: [id])
+  businessPartner BusinessPartner? @relation(fields: [businessPartnerId], references: [id])
 
   @@index([customerName])
+  @@index([businessPartnerId, periodYm])
   @@map("receivables_fact")
 }
 
@@ -496,10 +562,38 @@ model GrossProfitFact {
   returnYen             BigInt?  @map("return_yen")
   grossProfitYen        BigInt?  @map("gross_profit_yen")
   grossProfitRate       Decimal? @map("gross_profit_rate") @db.Decimal(5, 2)
+  updatedAt             DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+  deletedAt             DateTime? @map("deleted_at") @db.Timestamptz()
 
   import DataImport? @relation(fields: [importId], references: [id])
 
   @@map("gross_profit_fact")
+}
+
+model InventorySnapshotFact {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  importId    String?   @map("import_id") @db.Uuid
+  periodYm    DateTime? @map("period_ym") @db.Date
+  productCode String?   @map("product_code")
+  productName String?   @map("product_name")
+  brandCode   String?   @map("brand_code")
+  brandName   String?   @map("brand_name")
+  cs1Code     String?   @map("cs1_code")
+  cs1Name     String?   @map("cs1_name")
+  cs2Code     String?   @map("cs2_code")
+  cs2Name     String?   @map("cs2_name")
+  janCode     String?   @map("jan_code")
+  openingQty  Int?      @map("opening_qty")
+  openingYen  BigInt?   @map("opening_yen")
+  closingQty  Int?      @map("closing_qty")
+  closingYen  BigInt?   @map("closing_yen")
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz()
+
+  import DataImport? @relation(fields: [importId], references: [id])
+
+  @@index([periodYm])
+  @@map("inventory_snapshot_fact")
 }
 
 // ============================================================

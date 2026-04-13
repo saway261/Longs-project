@@ -38,7 +38,10 @@ export async function loginAction(input: unknown): Promise<
     await createSession(user.id)
 
     // 4. ユーザー情報を返す
-    return { success: true, data: user }
+    return {
+      success: true,
+      data: { userId: user.id, email: user.email, name: user.name, role: user.role },
+    }
   } catch (error) {
     console.error("[loginAction]", error)
     return { success: false, error: "ログインに失敗しました" }

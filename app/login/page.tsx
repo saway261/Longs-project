@@ -101,7 +101,7 @@ export default function LoginPage() {
                   type="email"
                   placeholder="demo@apparel.jp"
                   required
-                  defaultValue="owner@apparel.jp"
+                  defaultValue="testuser@apparel.jp"
                 />
               </div>
               <div className="space-y-2">
@@ -112,7 +112,7 @@ export default function LoginPage() {
                   type="password"
                   placeholder="••••••••"
                   required
-                  defaultValue="demopass"
+                  defaultValue="testpass"
                 />
               </div>
               <div className="flex items-center justify-between">

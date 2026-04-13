@@ -1,5 +1,5 @@
-import { InventoryAI } from "@/components/inventory-ai"
+import { InventoryCatalog } from "@/components/feature/inventory/inventory-catalog"
 
 export default function InventoryCatalogPage() {
-  return <InventoryAI initialTab="catalog" />
+  return <InventoryCatalog />
 }

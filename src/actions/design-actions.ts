@@ -49,8 +49,13 @@ export async function generateDesignImageAction(
 // 一覧取得
 // ============================================================
 
+export type DesignAssetsResult = {
+  assets: DesignAssetDTO[]
+  currentUserId: string
+}
+
 export async function getDesignAssetsAction(): Promise<
-  ActionResult<DesignAssetDTO[]>
+  ActionResult<DesignAssetsResult>
 > {
   try {
     const session = await getSession()
@@ -58,8 +63,8 @@ export async function getDesignAssetsAction(): Promise<
       return { success: false, error: "ログインが必要です" }
     }
 
-    const data = await designService.getDesignAssets(session.userId)
-    return { success: true, data }
+    const assets = await designService.getDesignAssets(session.userId)
+    return { success: true, data: { assets, currentUserId: session.userId } }
   } catch (error) {
     console.error("[getDesignAssetsAction]", error)
     return { success: false, error: "デザイン一覧の取得に失敗しました" }
