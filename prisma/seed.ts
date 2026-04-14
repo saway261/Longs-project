@@ -63,12 +63,76 @@ const PRODUCTS_DEF = [
 ] as const
 
 // ── DataImport ID 定数 ────────────────────────────────────────────────────────
-const SALES_2025_ID      = "dd000001-0000-0000-0000-000000000001"
-const SALES_2026_ID      = "dd000001-0000-0000-0000-000000000002"
-const SNAP_2025_ID       = "dd000002-0000-0000-0000-000000000001"
-const SNAP_2026_ID       = "dd000002-0000-0000-0000-000000000002"
-const ALERT_SNAP_ID      = "dd000003-0000-0000-0000-000000000001"
-const ALERT_SALES_ID     = "dd000003-0000-0000-0000-000000000002"
+const SALES_2025_ID         = "dd000001-0000-0000-0000-000000000001"
+const SALES_2026_ID         = "dd000001-0000-0000-0000-000000000002"
+const SNAP_2025_ID          = "dd000002-0000-0000-0000-000000000001"
+const SNAP_2026_ID          = "dd000002-0000-0000-0000-000000000002"
+const ALERT_SNAP_ID         = "dd000003-0000-0000-0000-000000000001"
+const ALERT_SALES_ID        = "dd000003-0000-0000-0000-000000000002"
+const MATRIX_DEMO_SALES_ID  = "dd000004-0000-0000-0000-000000000001"
+
+// ──────────────────────────────────────────────────────────────────────────────
+// マトリクスデモ用 追加得意先（16件）
+// ──────────────────────────────────────────────────────────────────────────────
+const EXTRA_CUSTOMERS = [
+  // 優良（高売上×高粗利）
+  { partnerId: "c0000001-0000-0000-0002-000000000005", code: "C05", name: "銀座セントル",           annualYen: 25_000_000, gpRate: 0.44, staffName: "山本",   closingDay: 31, collectionMonthOffset: 1, collectionDay: 25 },
+  { partnerId: "c0000001-0000-0000-0002-000000000006", code: "C06", name: "名古屋スタイルハウス",   annualYen: 20_000_000, gpRate: 0.42, staffName: "佐藤",   closingDay: 31, collectionMonthOffset: 1, collectionDay: 15 },
+  { partnerId: "c0000001-0000-0000-0002-000000000007", code: "C07", name: "横浜ファッション倶楽部", annualYen: 18_000_000, gpRate: 0.41, staffName: "田中",   closingDay: 31, collectionMonthOffset: 1, collectionDay: 20 },
+  { partnerId: "c0000001-0000-0000-0002-000000000008", code: "C08", name: "渋谷パルコセレクト",     annualYen: 16_000_000, gpRate: 0.38, staffName: "高橋",   closingDay: 31, collectionMonthOffset: 1, collectionDay: 25 },
+  // 薄利多売（高売上×低粗利）
+  { partnerId: "c0000001-0000-0000-0002-000000000009", code: "C09", name: "関西ファッション流通",   annualYen: 28_000_000, gpRate: 0.21, staffName: "森",     closingDay: 31, collectionMonthOffset: 2, collectionDay: 10 },
+  { partnerId: "c0000001-0000-0000-0002-000000000010", code: "C10", name: "ECアパレル",             annualYen: 22_000_000, gpRate: 0.23, staffName: "清水",   closingDay: 31, collectionMonthOffset: 0, collectionDay: 31 },
+  { partnerId: "c0000001-0000-0000-0002-000000000011", code: "C11", name: "首都圏アウトレット",     annualYen: 17_000_000, gpRate: 0.26, staffName: "佐々木", closingDay: 31, collectionMonthOffset: 2, collectionDay: 15 },
+  { partnerId: "c0000001-0000-0000-0002-000000000012", code: "C12", name: "ビッグファッション関東", annualYen: 15_000_000, gpRate: 0.28, staffName: "松本",   closingDay: 31, collectionMonthOffset: 1, collectionDay: 31 },
+  // 高収益ニッチ（低売上×高粗利）
+  { partnerId: "c0000001-0000-0000-0002-000000000013", code: "C13", name: "軽井沢ブティックヴィラ", annualYen:  4_000_000, gpRate: 0.46, staffName: "伊藤",   closingDay: 15, collectionMonthOffset: 1, collectionDay: 31 },
+  { partnerId: "c0000001-0000-0000-0002-000000000014", code: "C14", name: "代官山モードセレクト",   annualYen:  5_000_000, gpRate: 0.43, staffName: "吉田",   closingDay: 31, collectionMonthOffset: 1, collectionDay: 25 },
+  { partnerId: "c0000001-0000-0000-0002-000000000015", code: "C15", name: "京都古都セレクト",       annualYen:  3_500_000, gpRate: 0.48, staffName: "小林",   closingDay: 31, collectionMonthOffset: 2, collectionDay: 10 },
+  { partnerId: "c0000001-0000-0000-0002-000000000016", code: "C16", name: "鎌倉スタイルショップ",   annualYen:  6_000_000, gpRate: 0.42, staffName: "中村",   closingDay: 31, collectionMonthOffset: 1, collectionDay: 20 },
+  // 課題（低売上×低粗利）
+  { partnerId: "c0000001-0000-0000-0002-000000000017", code: "C17", name: "東北衣料販売",           annualYen:  4_000_000, gpRate: 0.18, staffName: "加藤",   closingDay: 31, collectionMonthOffset: 2, collectionDay: 31 },
+  { partnerId: "c0000001-0000-0000-0002-000000000018", code: "C18", name: "九州ファッション流通",   annualYen:  3_000_000, gpRate: 0.22, staffName: "藤井",   closingDay: 31, collectionMonthOffset: 2, collectionDay: 15 },
+  { partnerId: "c0000001-0000-0000-0002-000000000019", code: "C19", name: "北関東衣料商事",         annualYen:  2_500_000, gpRate: 0.15, staffName: "石井",   closingDay: 31, collectionMonthOffset: 2, collectionDay: 31 },
+  { partnerId: "c0000001-0000-0000-0002-000000000020", code: "C20", name: "中国地方ファッション",   annualYen:  2_000_000, gpRate: 0.20, staffName: "岡田",   closingDay: 31, collectionMonthOffset: 2, collectionDay: 20 },
+] as const
+
+// ──────────────────────────────────────────────────────────────────────────────
+// マトリクスデモ用 追加商品（20件）
+// ──────────────────────────────────────────────────────────────────────────────
+const BRAND_CODE: Record<string, string> = {
+  "UrbanLine":  "BR01",
+  "LuxeCoat":  "BR02",
+  "ActiveGear": "BR03",
+  "RelaxWear":  "BR04",
+}
+
+const EXTRA_PRODUCTS = [
+  // 優良商品（高売上×高粗利）
+  { code: "EX001", name: "プレミアムカシミヤニット", cs1: "秋冬定番", brand: "LuxeCoat",   annualYen: 14_000_000, gpRate: 0.46 },
+  { code: "EX002", name: "シグネチャーダウン",       cs1: "秋冬定番", brand: "LuxeCoat",   annualYen: 12_000_000, gpRate: 0.43 },
+  { code: "EX003", name: "シルクブレンドジャケット", cs1: "秋冬定番", brand: "UrbanLine",  annualYen: 11_000_000, gpRate: 0.39 },
+  { code: "EX004", name: "センタープレスパンツ",     cs1: "定番",     brand: "UrbanLine",  annualYen: 10_000_000, gpRate: 0.41 },
+  { code: "EX005", name: "レザーミニバッグ",         cs1: "定番",     brand: "LuxeCoat",   annualYen:  9_000_000, gpRate: 0.47 },
+  // 薄利多売商品（高売上×低粗利）
+  { code: "EX006", name: "ベーシックTシャツ3枚組",  cs1: "春夏定番", brand: "RelaxWear",  annualYen: 16_000_000, gpRate: 0.18 },
+  { code: "EX007", name: "量販向けスウェット",       cs1: "春夏定番", brand: "RelaxWear",  annualYen: 14_000_000, gpRate: 0.22 },
+  { code: "EX008", name: "定番ジャージパンツ",       cs1: "定番",     brand: "ActiveGear", annualYen: 12_000_000, gpRate: 0.24 },
+  { code: "EX009", name: "アウトレット向けパーカ",   cs1: "秋冬定番", brand: "ActiveGear", annualYen: 10_000_000, gpRate: 0.26 },
+  { code: "EX010", name: "ノベルティ付きトート",     cs1: "定番",     brand: "RelaxWear",  annualYen:  9_000_000, gpRate: 0.20 },
+  // 高収益ニッチ商品（低売上×高粗利）
+  { code: "EX011", name: "国産シルクスカーフ",       cs1: "定番",     brand: "LuxeCoat",   annualYen:  3_000_000, gpRate: 0.51 },
+  { code: "EX012", name: "手染めデニムジャケット",   cs1: "定番",     brand: "UrbanLine",  annualYen:  2_500_000, gpRate: 0.45 },
+  { code: "EX013", name: "職人仕立てレザーベルト",   cs1: "定番",     brand: "LuxeCoat",   annualYen:  2_000_000, gpRate: 0.44 },
+  { code: "EX014", name: "和紙混カーディガン",       cs1: "春夏定番", brand: "UrbanLine",  annualYen:  2_500_000, gpRate: 0.43 },
+  { code: "EX015", name: "ハンドメイドポーチ",       cs1: "定番",     brand: "LuxeCoat",   annualYen:  1_800_000, gpRate: 0.48 },
+  // 課題商品（低売上×低粗利）
+  { code: "EX016", name: "型落ちプリントT",          cs1: "春夏定番", brand: "RelaxWear",  annualYen:  3_500_000, gpRate: 0.15 },
+  { code: "EX017", name: "旧モデル中綿ベスト",       cs1: "秋冬定番", brand: "ActiveGear", annualYen:  3_000_000, gpRate: 0.19 },
+  { code: "EX018", name: "在庫処分カーゴパンツ",     cs1: "定番",     brand: "ActiveGear", annualYen:  2_500_000, gpRate: 0.22 },
+  { code: "EX019", name: "セール向け薄手ニット",     cs1: "秋冬定番", brand: "RelaxWear",  annualYen:  2_000_000, gpRate: 0.17 },
+  { code: "EX020", name: "過年度チェックシャツ",     cs1: "春夏定番", brand: "RelaxWear",  annualYen:  1_500_000, gpRate: 0.21 },
+] as const
 
 // ── 対象月リスト ──────────────────────────────────────────────────────────────
 const SALES_MONTHS: [number, number][] = [
@@ -160,6 +224,7 @@ async function main() {
     { id: SALES_2026_ID,                          dataset: ImportDataset.sales,             fileName: "sales_2026_ytd.csv",         status: ImportStatus.success,  summary: "2026年売上データ（1-3月）を取り込みました。",          importedAt: new Date("2026-03-05T09:00:00+09:00"), rowsTotal: 90,    rowsSuccess: 90,    rowsSkipped: 0, warningsCount: 0, errorsCount: 0 },
     { id: SNAP_2025_ID,                           dataset: ImportDataset.inventory_snapshot, fileName: "inventory_snap_2025.csv",   status: ImportStatus.success,  summary: "2025年月次在庫スナップショットを取り込みました。",      importedAt: new Date("2025-12-31T09:00:00+09:00"), rowsTotal: 360,   rowsSuccess: 360,   rowsSkipped: 0, warningsCount: 0, errorsCount: 0 },
     { id: SNAP_2026_ID,                           dataset: ImportDataset.inventory_snapshot, fileName: "inventory_snap_2026_jan_feb.csv", status: ImportStatus.success, summary: "2026年1-2月在庫スナップショットを取り込みました。", importedAt: new Date("2026-02-28T18:00:00+09:00"), rowsTotal: 60,    rowsSuccess: 60,    rowsSkipped: 0, warningsCount: 0, errorsCount: 0 },
+    { id: MATRIX_DEMO_SALES_ID,                   dataset: ImportDataset.sales,              fileName: "sales_matrix_demo.csv",           status: ImportStatus.success, summary: "マトリクスデモ用売上データを取り込みました。",        importedAt: new Date("2026-03-10T09:00:00+09:00"), rowsTotal: 540,   rowsSuccess: 540,   rowsSkipped: 0, warningsCount: 0, errorsCount: 0 },
   ] as const
   for (const imp of importSeed) {
     await prisma.dataImport.upsert({ where: { id: imp.id }, update: {}, create: { ...imp, importedBy: user.id } })
@@ -256,7 +321,15 @@ async function main() {
       update: { closingDay: c.closingDay, collectionMonthOffset: c.collectionMonthOffset, collectionDay: c.collectionDay },
     })
   }
-  console.log(`✓ BusinessPartner + Supplier + Customer (${supplierPartners.length + customerPartners.length}件)`)
+  for (const c of EXTRA_CUSTOMERS) {
+    await prisma.businessPartner.upsert({ where: { id: c.partnerId }, update: {}, create: { id: c.partnerId, name: c.name } })
+    await prisma.customer.upsert({
+      where: { businessPartnerId: c.partnerId },
+      create: { businessPartnerId: c.partnerId, closingDay: c.closingDay, collectionMonthOffset: c.collectionMonthOffset, collectionDay: c.collectionDay },
+      update: { closingDay: c.closingDay, collectionMonthOffset: c.collectionMonthOffset, collectionDay: c.collectionDay },
+    })
+  }
+  console.log(`✓ BusinessPartner + Supplier + Customer (${supplierPartners.length + customerPartners.length + EXTRA_CUSTOMERS.length}件)`)
 
   // ── ブランド→取引先マッピング（SalesFact 生成用） ─────────────────────────────
   const BRAND_TO_CUSTOMER: Record<string, { code: string; name: string; partnerId: string }> = {
@@ -469,6 +542,57 @@ async function main() {
           grossProfitRate: p.gpRate * 100,
         })
       }
+    }
+  }
+
+  // ── マトリクスデモ用 得意先データ（16件×15ヶ月=240行） ─────────────────────────
+  // productCode を設定しないことで商品マトリクスへの混入を防ぐ
+  for (const c of EXTRA_CUSTOMERS) {
+    const baseMonthlyYen = c.annualYen / 12
+    for (const [year, month] of SALES_MONTHS) {
+      const growth = year === 2026 ? 1.05 : 1.0
+      const factor = mul("misc", month) * growth
+      const netSalesYen = BigInt(Math.round(baseMonthlyYen * factor))
+      const grossProfitYen = BigInt(Math.round(Number(netSalesYen) * c.gpRate))
+      salesRows.push({
+        importId: MATRIX_DEMO_SALES_ID,
+        businessPartnerId: c.partnerId,
+        customerCategory1Code: c.code,
+        customerCategory1Name: c.name,
+        staffName: c.staffName,
+        periodYm: new Date(`${year}-${String(month).padStart(2, "0")}-01`),
+        salesDate: new Date(`${year}-${String(month).padStart(2, "0")}-15`),
+        netSalesYen,
+        returnYen: BigInt(0),
+        grossProfitYen,
+        grossProfitRate: c.gpRate * 100,
+      })
+    }
+  }
+
+  // ── マトリクスデモ用 商品データ（20件×15ヶ月=300行） ────────────────────────
+  // customerCategory1Name を設定しないことで得意先マトリクスへの混入を防ぐ
+  for (const p of EXTRA_PRODUCTS) {
+    const baseMonthlyYen = p.annualYen / 12
+    for (const [year, month] of SALES_MONTHS) {
+      const growth = year === 2026 ? 1.05 : 1.0
+      const factor = mul("misc", month) * growth
+      const netSalesYen = BigInt(Math.round(baseMonthlyYen * factor))
+      const grossProfitYen = BigInt(Math.round(Number(netSalesYen) * p.gpRate))
+      salesRows.push({
+        importId: MATRIX_DEMO_SALES_ID,
+        productCode: p.code,
+        productName1: p.name,
+        cs1Name: p.cs1,
+        brandName: p.brand,
+        brandCode: BRAND_CODE[p.brand] ?? null,
+        periodYm: new Date(`${year}-${String(month).padStart(2, "0")}-01`),
+        salesDate: new Date(`${year}-${String(month).padStart(2, "0")}-15`),
+        netSalesYen,
+        returnYen: BigInt(0),
+        grossProfitYen,
+        grossProfitRate: p.gpRate * 100,
+      })
     }
   }
 
