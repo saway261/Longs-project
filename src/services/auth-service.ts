@@ -47,6 +47,34 @@ export async function verifyCredentials(
 }
 
 /**
+ * パスワードを変更する
+ */
+export async function updatePassword(
+  userId: string,
+  currentPassword: string,
+  newPassword: string,
+): Promise<{ success: true } | { success: false; error: string }> {
+  try {
+    const user = await prisma.userAccount.findUnique({ where: { id: userId } })
+    if (!user) return { success: false, error: "ユーザーが見つかりません" }
+    if (!user.passwordHash) return { success: false, error: "パスワードが設定されていません" }
+
+    const isValid = await bcrypt.compare(currentPassword, user.passwordHash)
+    if (!isValid) return { success: false, error: "現在のパスワードが正しくありません" }
+
+    const newHash = await bcrypt.hash(newPassword, 12)
+    await prisma.userAccount.update({
+      where: { id: userId },
+      data: { passwordHash: newHash },
+    })
+    return { success: true }
+  } catch (error) {
+    console.error("[updatePassword]", error)
+    return { success: false, error: "パスワードの変更に失敗しました" }
+  }
+}
+
+/**
  * IDでユーザー情報を取得（セッション復元用）
  */
 export async function getUserById(userId: string): Promise<UserDTO | null> {

@@ -61,6 +61,7 @@ enum DesignType {
 
 enum UserRole {
   admin
+  manager
   general
 
   @@map("user_role")

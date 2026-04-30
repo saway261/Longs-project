@@ -19,7 +19,10 @@ export async function middleware(request: NextRequest) {
 
   // 2. Cookie が存在する → ページ表示を許可
   // (詳細な検証はページロード時に SessionGuard で実行)
-  return NextResponse.next()
+  // パスを x-pathname ヘッダーに付与して Server Component 側でロールチェックに使用
+  const response = NextResponse.next()
+  response.headers.set("x-pathname", pathname)
+  return response
 }
 
 export const config = {

@@ -2,6 +2,7 @@
 
 import { unstable_cache, revalidateTag } from "next/cache"
 import * as svc from "@/src/services/insights-service"
+import { requireRole } from "@/src/lib/permissions"
 
 export type {
   SalesCompositionData,
@@ -57,27 +58,39 @@ const cachedInventoryAlert = unstable_cache(
 
 export async function getSalesCompositionAction(groupBy: "category" | "brand") {
   try {
+    await requireRole(["admin", "manager"])
     const data = await cachedSalesComposition(groupBy)
     return { success: true as const, data }
-  } catch {
+  } catch (e) {
+    if (e instanceof Error && (e.message === "認証が必要です" || e.message === "権限がありません")) {
+      return { success: false as const, error: e.message }
+    }
     return { success: false as const, error: "データの取得に失敗しました" }
   }
 }
 
 export async function getYearlyComparisonAction() {
   try {
+    await requireRole(["admin", "manager"])
     const data = await cachedYearlyComparison()
     return { success: true as const, data }
-  } catch {
+  } catch (e) {
+    if (e instanceof Error && (e.message === "認証が必要です" || e.message === "権限がありません")) {
+      return { success: false as const, error: e.message }
+    }
     return { success: false as const, error: "データの取得に失敗しました" }
   }
 }
 
 export async function getStockTurnoverAction() {
   try {
+    await requireRole(["admin", "manager"])
     const data = await cachedStockTurnover()
     return { success: true as const, data }
   } catch (e) {
+    if (e instanceof Error && (e.message === "認証が必要です" || e.message === "権限がありません")) {
+      return { success: false as const, error: e.message }
+    }
     console.error("[getStockTurnoverAction]", e)
     return { success: false as const, error: "データの取得に失敗しました" }
   }
@@ -85,40 +98,56 @@ export async function getStockTurnoverAction() {
 
 export async function getSalesForecastAction(category: string | null) {
   try {
+    await requireRole(["admin", "manager"])
     const data = await cachedSalesForecast(category)
     return { success: true as const, data }
-  } catch {
+  } catch (e) {
+    if (e instanceof Error && (e.message === "認証が必要です" || e.message === "権限がありません")) {
+      return { success: false as const, error: e.message }
+    }
     return { success: false as const, error: "データの取得に失敗しました" }
   }
 }
 
 export async function getTurnoverRankingAction() {
   try {
+    await requireRole(["admin", "manager"])
     const data = await cachedTurnoverRanking()
     return { success: true as const, data }
-  } catch {
+  } catch (e) {
+    if (e instanceof Error && (e.message === "認証が必要です" || e.message === "権限がありません")) {
+      return { success: false as const, error: e.message }
+    }
     return { success: false as const, error: "データの取得に失敗しました" }
   }
 }
 
 export async function getCategoryAgingAction() {
   try {
+    await requireRole(["admin", "manager"])
     const data = await cachedCategoryAging()
     return { success: true as const, data }
-  } catch {
+  } catch (e) {
+    if (e instanceof Error && (e.message === "認証が必要です" || e.message === "権限がありません")) {
+      return { success: false as const, error: e.message }
+    }
     return { success: false as const, error: "データの取得に失敗しました" }
   }
 }
 
 export async function getInventoryAlertAction() {
   try {
+    await requireRole(["admin", "manager"])
     const data = await cachedInventoryAlert()
     return { success: true as const, data }
-  } catch {
+  } catch (e) {
+    if (e instanceof Error && (e.message === "認証が必要です" || e.message === "権限がありません")) {
+      return { success: false as const, error: e.message }
+    }
     return { success: false as const, error: "データの取得に失敗しました" }
   }
 }
 
 export async function revalidateInsightsCache() {
-  revalidateTag("insights")
+  revalidateTag("insights", "default")
 }

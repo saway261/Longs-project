@@ -1,6 +1,7 @@
 "use server"
 
 import * as settingsService from "@/src/services/settings-service"
+import { requireRole } from "@/src/lib/permissions"
 
 export type { CategoryDTO, RecurringEntryDTO, ReservePolicyDTO } from "@/src/services/settings-service"
 
@@ -8,9 +9,13 @@ export async function getCategoriesAction(): Promise<
   { success: true; data: settingsService.CategoryDTO[] } | { success: false; error: string }
 > {
   try {
+    await requireRole(["admin", "manager"])
     const data = await settingsService.getCategories()
     return { success: true, data }
   } catch (e) {
+    if (e instanceof Error && (e.message === "認証が必要です" || e.message === "権限がありません")) {
+      return { success: false, error: e.message }
+    }
     console.error("[getCategoriesAction]", e)
     return { success: false, error: "カテゴリの取得に失敗しました" }
   }
@@ -24,12 +29,16 @@ export async function createCategoryAction(
   { success: true; data: settingsService.CategoryDTO } | { success: false; error: string }
 > {
   try {
+    await requireRole(["admin", "manager"])
     if (!name.trim()) return { success: false, error: "カテゴリ名を入力してください" }
     if (sellThroughDays < 1) return { success: false, error: "売り切り日数は1以上で入力してください" }
     const code = categoryCode?.trim() || null
     const data = await settingsService.createCategory(name.trim(), sellThroughDays, code)
     return { success: true, data }
   } catch (e: any) {
+    if (e instanceof Error && (e.message === "認証が必要です" || e.message === "権限がありません")) {
+      return { success: false, error: e.message }
+    }
     if (e?.code === "P2002") return { success: false, error: "同じ名前またはカテゴリコードが既に存在します" }
     console.error("[createCategoryAction]", e)
     return { success: false, error: "カテゴリの作成に失敗しました" }
@@ -45,12 +54,16 @@ export async function updateCategoryAction(
   { success: true; data: settingsService.CategoryDTO } | { success: false; error: string }
 > {
   try {
+    await requireRole(["admin", "manager"])
     if (!name.trim()) return { success: false, error: "カテゴリ名を入力してください" }
     if (sellThroughDays < 1) return { success: false, error: "売り切り日数は1以上で入力してください" }
     const code = categoryCode?.trim() || null
     const data = await settingsService.updateCategory(id, name.trim(), sellThroughDays, code)
     return { success: true, data }
   } catch (e: any) {
+    if (e instanceof Error && (e.message === "認証が必要です" || e.message === "権限がありません")) {
+      return { success: false, error: e.message }
+    }
     if (e?.code === "P2002") return { success: false, error: "同じ名前またはカテゴリコードが既に存在します" }
     console.error("[updateCategoryAction]", e)
     return { success: false, error: "カテゴリの更新に失敗しました" }
@@ -61,9 +74,13 @@ export async function getInventoryTurnoverPeriodAction(): Promise<
   { success: true; months: number } | { success: false; error: string }
 > {
   try {
+    await requireRole(["admin", "manager"])
     const months = await settingsService.getInventoryTurnoverPeriodMonths()
     return { success: true, months }
   } catch (e) {
+    if (e instanceof Error && (e.message === "認証が必要です" || e.message === "権限がありません")) {
+      return { success: false, error: e.message }
+    }
     console.error("[getInventoryTurnoverPeriodAction]", e)
     return { success: false, error: "設定の取得に失敗しました" }
   }
@@ -73,11 +90,15 @@ export async function setInventoryTurnoverPeriodAction(
   months: number,
 ): Promise<{ success: true } | { success: false; error: string }> {
   try {
+    await requireRole(["admin", "manager"])
     const valid = [1, 3, 6, 12]
     if (!valid.includes(months)) return { success: false, error: "無効な期間です" }
     await settingsService.setInventoryTurnoverPeriodMonths(months)
     return { success: true }
   } catch (e) {
+    if (e instanceof Error && (e.message === "認証が必要です" || e.message === "権限がありません")) {
+      return { success: false, error: e.message }
+    }
     console.error("[setInventoryTurnoverPeriodAction]", e)
     return { success: false, error: "設定の保存に失敗しました" }
   }
@@ -87,10 +108,14 @@ export async function deleteCategoryAction(
   id: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    await requireRole(["admin", "manager"])
     const result = await settingsService.deleteCategory(id)
     if (!result.success) return { success: false, error: result.reason }
     return { success: true }
   } catch (e) {
+    if (e instanceof Error && (e.message === "認証が必要です" || e.message === "権限がありません")) {
+      return { success: false, error: e.message }
+    }
     console.error("[deleteCategoryAction]", e)
     return { success: false, error: "カテゴリの削除に失敗しました" }
   }
@@ -102,9 +127,13 @@ export async function getRecurringEntriesAction(): Promise<
   { success: true; data: settingsService.RecurringEntryDTO[] } | { success: false; error: string }
 > {
   try {
+    await requireRole(["admin", "manager"])
     const data = await settingsService.getRecurringEntries()
     return { success: true, data }
   } catch (e) {
+    if (e instanceof Error && (e.message === "認証が必要です" || e.message === "権限がありません")) {
+      return { success: false, error: e.message }
+    }
     console.error("[getRecurringEntriesAction]", e)
     return { success: false, error: "固定費の取得に失敗しました" }
   }
@@ -114,6 +143,7 @@ export async function saveRecurringEntriesAction(
   items: Array<{ id?: string; description: string; amountYen: number; dueDay: number }>,
 ): Promise<{ success: true; data: settingsService.RecurringEntryDTO[] } | { success: false; error: string }> {
   try {
+    await requireRole(["admin", "manager"])
     for (const item of items) {
       if (!item.description.trim()) return { success: false, error: "項目名を入力してください" }
       if (item.amountYen < 0) return { success: false, error: "金額は0以上で入力してください" }
@@ -122,6 +152,9 @@ export async function saveRecurringEntriesAction(
     const data = await settingsService.saveRecurringEntries(items)
     return { success: true, data }
   } catch (e) {
+    if (e instanceof Error && (e.message === "認証が必要です" || e.message === "権限がありません")) {
+      return { success: false, error: e.message }
+    }
     console.error("[saveRecurringEntriesAction]", e)
     return { success: false, error: "固定費の保存に失敗しました" }
   }
@@ -133,9 +166,13 @@ export async function getReservePoliciesAction(): Promise<
   { success: true; data: settingsService.ReservePolicyDTO[] } | { success: false; error: string }
 > {
   try {
+    await requireRole(["admin", "manager"])
     const data = await settingsService.getReservePolicies()
     return { success: true, data }
   } catch (e) {
+    if (e instanceof Error && (e.message === "認証が必要です" || e.message === "権限がありません")) {
+      return { success: false, error: e.message }
+    }
     console.error("[getReservePoliciesAction]", e)
     return { success: false, error: "内部留保の取得に失敗しました" }
   }
@@ -145,6 +182,7 @@ export async function saveReservePoliciesAction(
   items: Array<{ id: string; percent: number }>,
 ): Promise<{ success: true; data: settingsService.ReservePolicyDTO[] } | { success: false; error: string }> {
   try {
+    await requireRole(["admin", "manager"])
     for (const item of items) {
       if (!Number.isInteger(item.percent) || item.percent < 0 || item.percent > 100) {
         return { success: false, error: "各割合は0〜100の整数で入力してください" }
@@ -153,6 +191,9 @@ export async function saveReservePoliciesAction(
     const data = await settingsService.saveReservePolicies(items)
     return { success: true, data }
   } catch (e) {
+    if (e instanceof Error && (e.message === "認証が必要です" || e.message === "権限がありません")) {
+      return { success: false, error: e.message }
+    }
     console.error("[saveReservePoliciesAction]", e)
     return { success: false, error: "内部留保の保存に失敗しました" }
   }

@@ -1,7 +1,7 @@
 "use server"
 
 import { ActionResult } from "@/src/lib/result"
-import { loginSchema } from "@/src/lib/validation/auth"
+import { loginSchema, changePasswordSchema } from "@/src/lib/validation/auth"
 import * as authService from "@/src/services/auth-service"
 import { createSession, deleteSession, getSession } from "@/src/lib/auth"
 
@@ -67,5 +67,25 @@ export async function getSessionAction(): Promise<
   } catch (error) {
     console.error("[getSessionAction]", error)
     return { success: false, error: "セッション情報の取得に失敗しました" }
+  }
+}
+
+export async function changePasswordAction(input: unknown): Promise<
+  { success: true } | { success: false; error: string }
+> {
+  try {
+    const session = await getSession()
+    if (!session) return { success: false, error: "認証が必要です" }
+
+    const parsed = changePasswordSchema.safeParse(input)
+    if (!parsed.success) {
+      return { success: false, error: parsed.error.errors[0].message }
+    }
+
+    const { currentPassword, newPassword } = parsed.data
+    return await authService.updatePassword(session.userId, currentPassword, newPassword)
+  } catch (error) {
+    console.error("[changePasswordAction]", error)
+    return { success: false, error: "パスワードの変更に失敗しました" }
   }
 }

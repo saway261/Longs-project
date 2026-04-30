@@ -156,6 +156,11 @@ async function main() {
     create: { email: "owner@apparel.jp", name: "オーナー", passwordHash, role: UserRole.admin },
   })
   await prisma.userAccount.upsert({
+    where: { email: "manager@apparel.jp" },
+    update: {},
+    create: { email: "manager@apparel.jp", name: "マネージャー", passwordHash: await bcrypt.hash("demopass", 10), role: UserRole.manager },
+  })
+  await prisma.userAccount.upsert({
     where: { email: "testuser@apparel.jp" },
     update: {},
     create: { email: "testuser@apparel.jp", name: "テストユーザー", passwordHash: await bcrypt.hash("testpass", 10), role: UserRole.general },

@@ -26,9 +26,11 @@ import {
   Sparkles,
   SlidersHorizontal,
   LayoutDashboard,
+  KeyRound,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getRoleLabel } from "@/src/lib/role-labels"
+import { Users } from "lucide-react"
 
 type SectionId = "design" | "inventory" | "advice" | "finance"
 
@@ -93,10 +95,19 @@ export function Sidebar({ user }: { user: UserInfo }) {
   const router = useRouter()
   const pathname = usePathname()
 
+  // ロールベースの表示制御
+  const isAdminOrManager = user.role === "admin" || user.role === "manager"
+  const isAdmin = user.role === "admin"
+
+  // general ユーザーは design セクションのみ表示
+  const visibleNavItems = isAdminOrManager
+    ? navItems
+    : navItems.filter((item) => item.id === "design")
+
   // パスベースのアクティブ判定
-  const activeSectionItem = navItems.find((item) => pathname.startsWith(item.basePath))
+  const activeSectionItem = visibleNavItems.find((item) => pathname.startsWith(item.basePath))
   const activeSection = activeSectionItem?.id
-  const activeSubItem = navItems.flatMap((i) => i.subItems).find((sub) =>
+  const activeSubItem = visibleNavItems.flatMap((i) => i.subItems).find((sub) =>
     pathname.startsWith(sub.href)
   )
   const isDataMainActive = pathname === "/data"
@@ -177,7 +188,7 @@ export function Sidebar({ user }: { user: UserInfo }) {
           </p>
           <nav>
             <ul className="space-y-1 pt-1">
-              {navItems.map((item) => {
+              {visibleNavItems.map((item) => {
                 const Icon = item.icon
                 const isActive = activeSection === item.id
                 const isExpanded = expandedSections.includes(item.id)
@@ -254,49 +265,71 @@ export function Sidebar({ user }: { user: UserInfo }) {
             全般
           </p>
           <ul className="space-y-1">
-            <li>
-              <button
-                onClick={() => router.push("/data")}
-                className={cn(
-                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left",
-                  isDataMainActive
-                    ? "bg-[#345fe1]/10 text-[#345fe1] font-medium"
-                    : "text-sidebar-foreground/80 hover:bg-sidebar-accent"
-                )}
-              >
-                <Table className="w-5 h-5" />
-                <span className="text-sm overflow-hidden w-0 group-hover/sidebar:w-30 opacity-0 group-hover/sidebar:opacity-100 whitespace-nowrap pointer-events-none transition-[width,opacity] duration-200 ease-in-out delay-75">
-                  データ一覧
-                </span>
-              </button>
-            </li>
-            <li>
-              <button
-                onClick={() => router.push("/data/import")}
-                className={cn(
-                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left",
-                  isDataImportActive
-                    ? "bg-[#345fe1]/10 text-[#345fe1] font-medium"
-                    : "text-sidebar-foreground/80 hover:bg-sidebar-accent"
-                )}
-              >
-                <Upload className="w-5 h-5" />
-                <span className="text-sm overflow-hidden w-0 group-hover/sidebar:w-30 opacity-0 group-hover/sidebar:opacity-100 whitespace-nowrap pointer-events-none transition-[width,opacity] duration-200 ease-in-out delay-75">
-                  データ登録
-                </span>
-              </button>
-            </li>
-            <li>
-              <button
-                onClick={handleCalculationRulesNavigation}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-foreground/80 hover:bg-sidebar-accent transition-colors text-left"
-              >
-                <SlidersHorizontal className="w-5 h-5" />
-                <span className="text-sm overflow-hidden w-0 group-hover/sidebar:w-30 opacity-0 group-hover/sidebar:opacity-100 whitespace-nowrap pointer-events-none transition-[width,opacity] duration-200 ease-in-out delay-75">
-                  ルール管理
-                </span>
-              </button>
-            </li>
+            {isAdminOrManager && (
+              <>
+                <li>
+                  <button
+                    onClick={() => router.push("/data")}
+                    className={cn(
+                      "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left",
+                      isDataMainActive
+                        ? "bg-[#345fe1]/10 text-[#345fe1] font-medium"
+                        : "text-sidebar-foreground/80 hover:bg-sidebar-accent"
+                    )}
+                  >
+                    <Table className="w-5 h-5" />
+                    <span className="text-sm overflow-hidden w-0 group-hover/sidebar:w-30 opacity-0 group-hover/sidebar:opacity-100 whitespace-nowrap pointer-events-none transition-[width,opacity] duration-200 ease-in-out delay-75">
+                      データ一覧
+                    </span>
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => router.push("/data/import")}
+                    className={cn(
+                      "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left",
+                      isDataImportActive
+                        ? "bg-[#345fe1]/10 text-[#345fe1] font-medium"
+                        : "text-sidebar-foreground/80 hover:bg-sidebar-accent"
+                    )}
+                  >
+                    <Upload className="w-5 h-5" />
+                    <span className="text-sm overflow-hidden w-0 group-hover/sidebar:w-30 opacity-0 group-hover/sidebar:opacity-100 whitespace-nowrap pointer-events-none transition-[width,opacity] duration-200 ease-in-out delay-75">
+                      データ登録
+                    </span>
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={handleCalculationRulesNavigation}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-foreground/80 hover:bg-sidebar-accent transition-colors text-left"
+                  >
+                    <SlidersHorizontal className="w-5 h-5" />
+                    <span className="text-sm overflow-hidden w-0 group-hover/sidebar:w-30 opacity-0 group-hover/sidebar:opacity-100 whitespace-nowrap pointer-events-none transition-[width,opacity] duration-200 ease-in-out delay-75">
+                      ルール管理
+                    </span>
+                  </button>
+                </li>
+              </>
+            )}
+            {isAdmin && (
+              <li>
+                <button
+                  onClick={() => router.push("/admin/users")}
+                  className={cn(
+                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left",
+                    pathname.startsWith("/admin/users")
+                      ? "bg-[#345fe1]/10 text-[#345fe1] font-medium"
+                      : "text-sidebar-foreground/80 hover:bg-sidebar-accent"
+                  )}
+                >
+                  <Users className="w-5 h-5" />
+                  <span className="text-sm overflow-hidden w-0 group-hover/sidebar:w-30 opacity-0 group-hover/sidebar:opacity-100 whitespace-nowrap pointer-events-none transition-[width,opacity] duration-200 ease-in-out delay-75">
+                    ユーザー管理
+                  </span>
+                </button>
+              </li>
+            )}
             <li>
               <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-foreground/80 hover:bg-sidebar-accent transition-colors text-left">
                 <HelpCircle className="w-5 h-5" />
@@ -320,21 +353,31 @@ export function Sidebar({ user }: { user: UserInfo }) {
                 <p className="text-xs text-sidebar-foreground/50">{getRoleLabel(user.role)}</p>
               </div>
             </div>
-            <button
-              onClick={handleLogout}
-              disabled={isLoggingOut}
-              className={cn(
-                "p-2 rounded-lg transition-colors hidden group-hover/sidebar:inline-flex",
-                isLoggingOut
-                  ? "bg-sidebar-accent/50 cursor-not-allowed"
-                  : "hover:bg-sidebar-accent"
-              )}
-            >
-              <LogOut className={cn(
-                "w-4 h-4",
-                isLoggingOut ? "text-sidebar-foreground/30" : "text-sidebar-foreground/60"
-              )} />
-            </button>
+            <div className="hidden group-hover/sidebar:inline-flex items-center gap-1">
+              <button
+                onClick={() => router.push("/account/password")}
+                title="パスワード変更"
+                className="p-2 rounded-lg hover:bg-sidebar-accent transition-colors"
+              >
+                <KeyRound className="w-4 h-4 text-sidebar-foreground/60" />
+              </button>
+              <button
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                title="ログアウト"
+                className={cn(
+                  "p-2 rounded-lg transition-colors",
+                  isLoggingOut
+                    ? "bg-sidebar-accent/50 cursor-not-allowed"
+                    : "hover:bg-sidebar-accent"
+                )}
+              >
+                <LogOut className={cn(
+                  "w-4 h-4",
+                  isLoggingOut ? "text-sidebar-foreground/30" : "text-sidebar-foreground/60"
+                )} />
+              </button>
+            </div>
           </div>
         </div>
       </aside>
