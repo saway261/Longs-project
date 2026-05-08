@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useTransition, useCallback } from "react"
-import { Globe, Plus, Pencil, RefreshCw } from "lucide-react"
+import { Globe, Plus, Pencil, RefreshCw, Trash2, ChevronDown, ChevronUp } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -17,8 +17,11 @@ import {
   createNewsQueryAction,
   updateNewsQueryAction,
   deleteNewsQueryAction,
+  deleteNewsArticleAction,
 } from "@/src/actions/news-actions"
 import type { NewsQueryDTO, NewsViewGroup } from "@/src/actions/news-actions"
+
+const COLLAPSE_THRESHOLD = 10
 
 interface Props {
   initialData: NewsViewGroup[]
@@ -34,6 +37,10 @@ export function BusinessNewsClient({ initialData, initialWeekStart, initialQueri
   const [editingQuery, setEditingQuery] = useState<NewsQueryDTO | null>(null)
   const [isFetching, startFetching] = useTransition()
   const [isLoading, startLoading] = useTransition()
+  // queryGroupId → 展開状態
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({})
+  // 削除中の記事ID（楽観的UI用）
+  const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set())
 
   // ─── ニュース表示データ取得 ──────────────────────────────────────
 
@@ -59,7 +66,6 @@ export function BusinessNewsClient({ initialData, initialWeekStart, initialQueri
   function handleFetch() {
     startFetching(async () => {
       await fetchLatestNewsAction()
-      // 取得後にクエリ一覧と表示データを更新
       const [qRes, nRes] = await Promise.all([
         listActiveQueriesAction(),
         getNewsViewAction(weekStart.toISOString()),
@@ -89,7 +95,6 @@ export function BusinessNewsClient({ initialData, initialWeekStart, initialQueri
       const res = await createNewsQueryAction(input)
       if (!res.success) throw new Error(res.error)
     }
-    // クエリ一覧と表示データを更新
     const [qRes, nRes] = await Promise.all([
       listActiveQueriesAction(),
       getNewsViewAction(weekStart.toISOString()),
@@ -108,6 +113,35 @@ export function BusinessNewsClient({ initialData, initialWeekStart, initialQueri
     ])
     if (qRes.success) setQueries(qRes.data)
     if (nRes.success) setViewData(nRes.data)
+  }
+
+  // ─── 記事削除 ─────────────────────────────────────────────────────
+
+  async function handleDeleteArticle(articleId: string) {
+    // 楽観的UI: 即座に非表示
+    setDeletingIds((prev) => new Set(prev).add(articleId))
+    const res = await deleteNewsArticleAction(articleId)
+    if (res.success) {
+      // 成功: ローカルの viewData から除外
+      setViewData((prev) =>
+        prev.map((group) => ({
+          ...group,
+          articles: group.articles.filter((a) => a.id !== articleId),
+        })),
+      )
+    }
+    // 成否に関わらず削除中状態を解除
+    setDeletingIds((prev) => {
+      const next = new Set(prev)
+      next.delete(articleId)
+      return next
+    })
+  }
+
+  // ─── 展開/折りたたみ ─────────────────────────────────────────────
+
+  function toggleExpand(groupId: string) {
+    setExpandedGroups((prev) => ({ ...prev, [groupId]: !prev[groupId] }))
   }
 
   // ─── レンダリング ─────────────────────────────────────────────────
@@ -158,98 +192,144 @@ export function BusinessNewsClient({ initialData, initialWeekStart, initialQueri
       {isLoading ? (
         <div className="text-center py-8 text-muted-foreground text-sm">読み込み中...</div>
       ) : (
-        viewData.map((group) => (
-          <Card key={group.queryGroupId}>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between gap-2">
-                <div>
-                  <CardTitle className="text-base">{group.queryName}</CardTitle>
+        viewData.map((group) => {
+          const isExpanded = expandedGroups[group.queryGroupId] ?? false
+          const hasMore = group.articles.length > COLLAPSE_THRESHOLD
+          const visibleArticles = hasMore && !isExpanded
+            ? group.articles.slice(0, COLLAPSE_THRESHOLD)
+            : group.articles
+
+          return (
+            <Card key={group.queryGroupId}>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <CardTitle className="text-base">{group.queryName}</CardTitle>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs">
+                      {group.articles.length} 件
+                    </Badge>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => {
+                        const q = queries.find(
+                          (q) => q.queryGroupId === group.queryGroupId,
+                        )
+                        if (q) openEdit(q)
+                      }}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-xs">
-                    {group.articles.length} 件
-                  </Badge>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7"
-                    onClick={() => {
-                      const q = queries.find(
-                        (q) => q.queryGroupId === group.queryGroupId,
-                      )
-                      if (q) openEdit(q)
-                    }}
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {group.articles.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-2">
-                  この週のニュースはありません。「最新ニュースを取得」ボタンで取得できます。
-                </p>
-              ) : (
-                group.articles.map((article) => (
-                  <div
-                    key={article.id}
-                    className="p-3 rounded-xl border border-border/70 hover:border-[#345fe1]/60 hover:shadow-sm transition-colors"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                      <Badge
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {group.articles.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-2">
+                    この週のニュースはありません。「最新ニュースを取得」ボタンで取得できます。
+                  </p>
+                ) : (
+                  <>
+                    {visibleArticles.map((article) => (
+                      <div
+                        key={article.id}
                         className={cn(
-                          "text-xs",
-                          article.impact === "high"
-                            ? "bg-red-100 text-red-700"
-                            : article.impact === "medium"
-                              ? "bg-yellow-100 text-yellow-700"
-                              : article.impact === "low"
-                                ? "bg-green-100 text-green-700"
-                                : "bg-gray-100 text-gray-500",
+                          "p-3 rounded-xl border border-border/70 hover:border-[#345fe1]/60 hover:shadow-sm transition-colors",
+                          deletingIds.has(article.id) && "opacity-40 pointer-events-none",
                         )}
                       >
-                        影響度:{" "}
-                        {article.impact === "high"
-                          ? "高"
-                          : article.impact === "medium"
-                            ? "中"
-                            : article.impact === "low"
-                              ? "低"
-                              : "-"}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground ml-auto">
-                        {article.sourceName && `${article.sourceName} ・ `}
-                        {new Date(article.publishedAt).toLocaleString("ja-JP", {
-                          timeZone: "Asia/Tokyo",
-                          month: "numeric",
-                          day: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </span>
-                    </div>
-                    {article.sourceUrl ? (
-                      <a
-                        href={article.sourceUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="font-semibold hover:underline"
+                        <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                          <Badge
+                            className={cn(
+                              "text-xs",
+                              article.impact === "high"
+                                ? "bg-red-100 text-red-700"
+                                : article.impact === "medium"
+                                  ? "bg-yellow-100 text-yellow-700"
+                                  : article.impact === "low"
+                                    ? "bg-green-100 text-green-700"
+                                    : "bg-gray-100 text-gray-500",
+                            )}
+                          >
+                            影響度:{" "}
+                            {article.impact === "high"
+                              ? "高"
+                              : article.impact === "medium"
+                                ? "中"
+                                : article.impact === "low"
+                                  ? "低"
+                                  : "-"}
+                          </Badge>
+                          <div className="flex items-center gap-2 ml-auto">
+                            <span className="text-xs text-muted-foreground">
+                              {article.sourceName && `${article.sourceName} ・ `}
+                              {new Date(article.publishedAt).toLocaleString("ja-JP", {
+                                timeZone: "Asia/Tokyo",
+                                month: "numeric",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                              onClick={() => handleDeleteArticle(article.id)}
+                              disabled={deletingIds.has(article.id)}
+                              title="この記事を削除"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                        {article.sourceUrl ? (
+                          <a
+                            href={article.sourceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-semibold hover:underline"
+                          >
+                            {article.title}
+                          </a>
+                        ) : (
+                          <p className="font-semibold">{article.title}</p>
+                        )}
+                        {article.summary && (
+                          <p className="text-sm text-muted-foreground mt-1">{article.summary}</p>
+                        )}
+                      </div>
+                    ))}
+
+                    {hasMore && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full text-muted-foreground hover:text-foreground"
+                        onClick={() => toggleExpand(group.queryGroupId)}
                       >
-                        {article.title}
-                      </a>
-                    ) : (
-                      <p className="font-semibold">{article.title}</p>
+                        {isExpanded ? (
+                          <>
+                            <ChevronUp className="h-4 w-4 mr-1.5" />
+                            折りたたむ
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown className="h-4 w-4 mr-1.5" />
+                            もっと見る（残り {group.articles.length - COLLAPSE_THRESHOLD} 件）
+                          </>
+                        )}
+                      </Button>
                     )}
-                    {article.summary && (
-                      <p className="text-sm text-muted-foreground mt-1">{article.summary}</p>
-                    )}
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-        ))
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          )
+        })
       )}
 
       {/* 編集ダイアログ: key で editingQuery が変わるたびに state をリセット */}

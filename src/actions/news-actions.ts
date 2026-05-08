@@ -102,6 +102,23 @@ export async function updateNewsQueryAction(
   }
 }
 
+/** ニュース記事削除（ソフト削除） */
+export async function deleteNewsArticleAction(
+  id: string,
+): Promise<{ success: true } | { success: false; error: string }> {
+  try {
+    await requireRole(["admin", "manager"])
+    await svc.deleteArticle(id)
+    return { success: true }
+  } catch (e) {
+    if (e instanceof Error && (e.message === "認証が必要です" || e.message === "権限がありません")) {
+      return { success: false, error: e.message }
+    }
+    console.error("[deleteNewsArticleAction]", e)
+    return { success: false, error: "記事の削除に失敗しました" }
+  }
+}
+
 /** 検索フィルター削除（ソフト削除） */
 export async function deleteNewsQueryAction(
   id: string,

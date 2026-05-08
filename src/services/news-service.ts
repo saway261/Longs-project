@@ -48,13 +48,32 @@ export interface NewsViewGroup {
 
 // ─── NewsQuery CRUD ───────────────────────────────────────────────
 
-/** isActive=true のクエリ一覧（createdAt ASC） */
+/**
+ * queryGroupId と同じ id を持つレコード（初代レコード）の createdAt を基準に昇順ソート。
+ * 編集のたびに新世代レコードが作られても並び順が変わらない。
+ */
+async function sortByGroupOrigin<T extends { queryGroupId: string }>(rows: T[]): Promise<T[]> {
+  if (rows.length === 0) return rows
+  const groupIds = rows.map((r) => r.queryGroupId)
+  const origins = await prisma.newsQuery.findMany({
+    where: { id: { in: groupIds } },
+    select: { id: true, createdAt: true },
+  })
+  const originMap = new Map(origins.map((o) => [o.id, o.createdAt]))
+  return [...rows].sort((a, b) => {
+    const aDate = originMap.get(a.queryGroupId)?.getTime() ?? 0
+    const bDate = originMap.get(b.queryGroupId)?.getTime() ?? 0
+    return aDate - bDate
+  })
+}
+
+/** isActive=true のクエリ一覧（グループ初代レコードの createdAt ASC） */
 export async function listActiveQueries(): Promise<NewsQueryDTO[]> {
   const rows = await prisma.newsQuery.findMany({
     where: { isActive: true },
-    orderBy: { createdAt: "asc" },
   })
-  return rows.map(toQueryDTO)
+  const sorted = await sortByGroupOrigin(rows)
+  return sorted.map(toQueryDTO)
 }
 
 /** 新規クエリ作成（queryGroupId = id） */
@@ -113,6 +132,16 @@ export async function deleteQuery(id: string): Promise<void> {
   await prisma.newsQuery.updateMany({
     where: { queryGroupId: row.queryGroupId },
     data: { isActive: false, deactivatedAt: new Date() },
+  })
+}
+
+/** 記事を論理削除（deletedAt を設定） */
+export async function deleteArticle(id: string): Promise<void> {
+  const row = await prisma.businessNews.findUnique({ where: { id } })
+  if (!row) throw new Error("記事が見つかりません")
+  await prisma.businessNews.update({
+    where: { id },
+    data: { deletedAt: new Date() },
   })
 }
 
@@ -192,11 +221,11 @@ async function generateEmbeddingsForQuery(queryId: string): Promise<void> {
 
 /** 指定週のニュースをqueryGroupId単位でグループ化して返す */
 export async function getNewsView(weekStart: Date): Promise<NewsViewGroup[]> {
-  // アクティブなクエリを queryGroupId 単位で最新世代を特定
-  const activeQueries = await prisma.newsQuery.findMany({
+  // アクティブなクエリをグループ初代レコードの createdAt 昇順で取得
+  const rawActiveQueries = await prisma.newsQuery.findMany({
     where: { isActive: true },
-    orderBy: { createdAt: "asc" },
   })
+  const activeQueries = await sortByGroupOrigin(rawActiveQueries)
 
   if (activeQueries.length === 0) return []
 
