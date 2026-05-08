@@ -22,7 +22,7 @@ import {
   Bot,
   Upload,
   Building2,
-  Globe,
+  Newspaper,
   Sparkles,
   SlidersHorizontal,
   LayoutDashboard,
@@ -70,8 +70,7 @@ const navItems = [
     basePath: "/advice",
     icon: Bot,
     subItems: [
-      { id: "advice-weekly-news", label: "週次ニュース", icon: Calendar, href: "/advice/news/weekly" },
-      { id: "advice-business-news", label: "経営判断ニュース", icon: Globe, href: "/advice/news/business" },
+      { id: "advice-news", label: "ニュース", icon: Newspaper, href: "/advice/news" },
       { id: "advice-action-candidates", label: "最適アクション候補", icon: Sparkles, href: "/advice/actions" },
       { id: "advice-report", label: "AIレポート作成", icon: FileText, href: "/advice/reports" },
     ],

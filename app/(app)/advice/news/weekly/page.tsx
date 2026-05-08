@@ -1,5 +1,5 @@
-import { AIAdviceWeeklyNews } from "@/components/feature/advice/advice-news-weekly"
+import { redirect } from "next/navigation"
 
-export default function AIAdviceWeeklyNewsPage() {
-  return <AIAdviceWeeklyNews />
+export default function WeeklyNewsRedirect() {
+  redirect("/advice/news")
 }
