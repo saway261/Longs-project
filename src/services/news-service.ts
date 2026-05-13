@@ -172,16 +172,12 @@ export async function fetchAndStoreAllActiveQueries(): Promise<void> {
 
   await Promise.all(
     queries.map(async (q) => {
-      // デフォルト除外ソースをマージ（含むソース指定の場合は無視）
+      // ソース指定がない場合のみデフォルト除外ソースを適用
       let effectiveSources = q.sources
       let effectiveSourceMode = q.sourceMode
-      if (defaultExcluded && q.sourceMode !== "include") {
-        const existing = q.sourceMode === "exclude" && q.sources
-          ? q.sources.split(",").map((s) => s.trim()).filter(Boolean)
-          : []
-        const defaults = defaultExcluded.split(",").map((s) => s.trim()).filter(Boolean)
-        const merged = [...new Set([...existing, ...defaults])]
-        effectiveSources = merged.join(",")
+      const hasSourceSpec = q.sourceMode && q.sources
+      if (!hasSourceSpec && defaultExcluded) {
+        effectiveSources = defaultExcluded
         effectiveSourceMode = "exclude"
       }
 

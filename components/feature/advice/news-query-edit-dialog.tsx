@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { X } from "lucide-react"
 import {
   Dialog,
@@ -81,7 +81,28 @@ export function NewsQueryEditDialog({
   const [isDeleting, setIsDeleting] = useState(false)
   const [error, setError] = useState("")
 
-  // ダイアログが開くたびに初期化
+  // ダイアログが開くたびに query の内容でリセット
+  useEffect(() => {
+    if (!open) return
+    setName(query?.name ?? "")
+    setKeywordMode(query?.keywordMode ?? "AND")
+    setKeywordInput("")
+    setKeywords(query?.keywords ? query.keywords.split(",").map((s) => s.trim()).filter(Boolean) : [])
+    setNotKeywordInput("")
+    setNotKeywords(query?.notKeywords ? query.notKeywords.split(",").map((s) => s.trim()).filter(Boolean) : [])
+    setSourceInput("")
+    setSources(query?.sources ? query.sources.split(",").map((s) => s.trim()).filter(Boolean) : [])
+    setSourceMode(query?.sourceMode ?? "none")
+    setLanguage(query?.language ?? "ja")
+    setCategoryMode(query?.categoryMode ?? "none")
+    setSelectedCategories(
+      query?.categories
+        ? (query.categories.split(",").filter((c) => NEWSDATA_CATEGORIES.includes(c as NewsdataCategory)) as NewsdataCategory[])
+        : [],
+    )
+    setError("")
+  }, [open])
+
   function handleOpenChange(open: boolean) {
     if (!open) onClose()
   }
@@ -111,6 +132,7 @@ export function NewsQueryEditDialog({
   function addSource() {
     const src = sourceInput.trim()
     if (!src || sources.includes(src)) return
+    if (sources.length >= 5) return
     setSources((prev) => [...prev, src])
     setSourceInput("")
   }
@@ -285,14 +307,16 @@ export function NewsQueryEditDialog({
             </Select>
             {sourceMode !== "none" && (
               <>
+                <p className="text-xs text-muted-foreground">最大5つまで指定できます（{sources.length}/5）</p>
                 <div className="flex gap-2">
                   <Input
                     value={sourceInput}
                     onChange={(e) => setSourceInput(e.target.value)}
                     placeholder="例: nhk.or.jp, reuters.com"
                     onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addSource())}
+                    disabled={sources.length >= 5}
                   />
-                  <Button type="button" variant="outline" size="sm" onClick={addSource}>
+                  <Button type="button" variant="outline" size="sm" onClick={addSource} disabled={sources.length >= 5}>
                     追加
                   </Button>
                 </div>
