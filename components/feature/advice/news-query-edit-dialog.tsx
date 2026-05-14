@@ -62,8 +62,8 @@ export function NewsQueryEditDialog({
   const [notKeywords, setNotKeywords] = useState<string[]>(
     query?.notKeywords ? query.notKeywords.split(",").map((s) => s.trim()).filter(Boolean) : [],
   )
-  const [apiDomain, setApiDomain] = useState<"newsdata.io" | "fashionsnap.com">(
-    (query?.domains as "newsdata.io" | "fashionsnap.com") ?? "newsdata.io",
+  const [apiDomain, setApiDomain] = useState<"newsdata.io" | "fashionsnap.com" | "気象庁">(
+    (query?.domains as "newsdata.io" | "fashionsnap.com" | "気象庁") ?? "newsdata.io",
   )
   const [sourceInput, setSourceInput] = useState("")
   const [sources, setSources] = useState<string[]>(
@@ -89,7 +89,7 @@ export function NewsQueryEditDialog({
   useEffect(() => {
     if (!open) return
     setName(query?.name ?? "")
-    setApiDomain((query?.domains as "newsdata.io" | "fashionsnap.com") ?? "newsdata.io")
+    setApiDomain((query?.domains as "newsdata.io" | "fashionsnap.com" | "気象庁") ?? "newsdata.io")
     setKeywordMode(query?.keywordMode ?? "AND")
     setSearchField(query?.searchField ?? "qInMeta")
     setKeywordInput("")
@@ -213,13 +213,14 @@ export function NewsQueryEditDialog({
           {/* ニュースAPI */}
           <div className="space-y-1.5">
             <Label>ニュースAPI</Label>
-            <Select value={apiDomain} onValueChange={(v: string) => setApiDomain(v as "newsdata.io" | "fashionsnap.com")}>
+            <Select value={apiDomain} onValueChange={(v: string) => setApiDomain(v as "newsdata.io" | "fashionsnap.com" | "気象庁")}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="newsdata.io">newsdata.io</SelectItem>
                 <SelectItem value="fashionsnap.com">fashionsnap.com (RSS)</SelectItem>
+                <SelectItem value="気象庁">気象庁（天気予報）</SelectItem>
               </SelectContent>
             </Select>
           </div>

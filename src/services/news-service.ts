@@ -2,6 +2,7 @@ import { prisma } from "@/src/lib/prisma"
 import { getWeekStart } from "@/src/lib/news-week"
 import { newsdataProvider } from "@/src/lib/news-providers/newsdata"
 import { fashionsnapRssProvider } from "@/src/lib/news-providers/fashionsnap-rss"
+import { jmaForecastProvider } from "@/src/lib/news-providers/jma-forecast"
 import type { NewsProvider } from "@/src/lib/news-providers/types"
 import { embedText } from "@/src/lib/gemini"
 import { getDefaultExcludedSources } from "@/src/services/system-setting-service"
@@ -167,6 +168,7 @@ export async function deleteArticle(id: string): Promise<void> {
 
 function selectProvider(domains: string | null): NewsProvider {
   if (domains === "fashionsnap.com") return fashionsnapRssProvider
+  if (domains === "気象庁") return jmaForecastProvider
   return newsdataProvider
 }
 
