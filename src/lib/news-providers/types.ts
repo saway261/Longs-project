@@ -12,6 +12,7 @@ export interface NewsProvider {
     keywords?: string | null
     keywordMode?: "AND" | "OR" | null
     notKeywords?: string | null
+    searchField?: "q" | "qInTitle" | "qInMeta" | null
     language?: string | null
     sources?: string | null
     sourceMode?: "include" | "exclude" | null

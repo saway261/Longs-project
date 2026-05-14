@@ -53,6 +53,7 @@ export function NewsQueryEditDialog({
 
   const [name, setName] = useState(query?.name ?? "")
   const [keywordMode, setKeywordMode] = useState<"AND" | "OR">(query?.keywordMode ?? "AND")
+  const [searchField, setSearchField] = useState<"q" | "qInTitle" | "qInMeta">(query?.searchField ?? "qInMeta")
   const [keywordInput, setKeywordInput] = useState("")
   const [keywords, setKeywords] = useState<string[]>(
     query?.keywords ? query.keywords.split(",").map((s) => s.trim()).filter(Boolean) : [],
@@ -86,6 +87,7 @@ export function NewsQueryEditDialog({
     if (!open) return
     setName(query?.name ?? "")
     setKeywordMode(query?.keywordMode ?? "AND")
+    setSearchField(query?.searchField ?? "qInMeta")
     setKeywordInput("")
     setKeywords(query?.keywords ? query.keywords.split(",").map((s) => s.trim()).filter(Boolean) : [])
     setNotKeywordInput("")
@@ -154,6 +156,7 @@ export function NewsQueryEditDialog({
         keywords: keywords.join(",") || null,
         keywordMode,
         notKeywords: notKeywords.join(",") || null,
+        searchField,
         language,
         sources: sources.join(",") || null,
         sourceMode: sourceMode === "none" ? null : sourceMode,
@@ -259,6 +262,21 @@ export function NewsQueryEditDialog({
                 </p>
               </div>
             )}
+
+            {/* 検索対象フィールド */}
+            <div className="space-y-1.5">
+              <Label>検索対象</Label>
+              <Select value={searchField} onValueChange={(v: string) => setSearchField(v as "q" | "qInTitle" | "qInMeta")}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="q">タイトル・本文・メタ全体（q）</SelectItem>
+                  <SelectItem value="qInTitle">タイトルのみ（qInTitle）</SelectItem>
+                  <SelectItem value="qInMeta">タイトル・説明・キーワード（qInMeta）</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
             {/* 除外キーワード（NOT） */}
             <div className="space-y-1.5">

@@ -10,6 +10,7 @@ export interface QueryInput {
   keywords?: string | null
   keywordMode?: "AND" | "OR" | null
   notKeywords?: string | null
+  searchField?: "q" | "qInTitle" | "qInMeta" | null
   language?: string | null
   sources?: string | null
   sourceMode?: "include" | "exclude" | null
@@ -25,6 +26,7 @@ export interface NewsQueryDTO {
   keywords: string | null
   keywordMode: "AND" | "OR" | null
   notKeywords: string | null
+  searchField: "q" | "qInTitle" | "qInMeta" | null
   language: string | null
   sources: string | null
   sourceMode: "include" | "exclude" | null
@@ -94,6 +96,7 @@ export async function createQuery(input: QueryInput): Promise<NewsQueryDTO> {
       keywords: input.keywords ?? null,
       keywordMode: input.keywordMode ?? "AND",
       notKeywords: input.notKeywords ?? null,
+      searchField: input.searchField ?? "qInMeta",
       language: input.language ?? "ja",
       sources: input.sources ?? null,
       sourceMode: input.sourceMode ?? null,
@@ -125,6 +128,7 @@ export async function updateQuery(id: string, input: QueryInput): Promise<NewsQu
         keywords: input.keywords ?? null,
         keywordMode: input.keywordMode ?? "AND",
         notKeywords: input.notKeywords ?? null,
+        searchField: input.searchField ?? "qInMeta",
         language: input.language ?? "ja",
         sources: input.sources ?? null,
         sourceMode: input.sourceMode ?? null,
@@ -186,6 +190,7 @@ export async function fetchAndStoreAllActiveQueries(): Promise<void> {
           keywords: q.keywords,
           keywordMode: q.keywordMode,
           notKeywords: q.notKeywords,
+          searchField: q.searchField,
           language: q.language,
           sources: effectiveSources,
           sourceMode: effectiveSourceMode,
@@ -328,6 +333,7 @@ function toQueryDTO(row: {
   keywords: string | null
   keywordMode: string | null
   notKeywords: string | null
+  searchField: string | null
   language: string | null
   sources: string | null
   sourceMode: string | null
@@ -343,6 +349,7 @@ function toQueryDTO(row: {
     keywords: row.keywords,
     keywordMode: (row.keywordMode as "AND" | "OR") ?? null,
     notKeywords: row.notKeywords,
+    searchField: (row.searchField as "q" | "qInTitle" | "qInMeta") ?? null,
     language: row.language,
     sources: row.sources,
     sourceMode: (row.sourceMode as "include" | "exclude") ?? null,

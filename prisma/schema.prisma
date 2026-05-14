@@ -667,6 +667,7 @@ model NewsQuery {
     keywords      String?                                            // カンマ区切りのメインキーワード
     keywordMode   String?   @default("AND") @map("keyword_mode")    // "AND" | "OR"
     notKeywords   String?   @map("not_keywords")                    // カンマ区切りのNOTキーワード
+    searchField   String?   @default("qInMeta") @map("search_field")  // "q" | "qInTitle" | "qInMeta"
     language      String?   @default("ja")                          // language/ lang
     sources       String?                                            // カンマ区切りのソースID or ドメイン
     sourceMode    String?   @map("source_mode")                      // "include" | "exclude" | null

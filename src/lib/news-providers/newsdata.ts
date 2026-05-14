@@ -30,7 +30,7 @@ function buildKeywordQuery(
 }
 
 export const newsdataProvider: NewsProvider = {
-  async fetch({ keywords, keywordMode, notKeywords, language, sources, sourceMode, domains, categoryMode, categories }) {
+  async fetch({ keywords, keywordMode, notKeywords, searchField, language, sources, sourceMode, domains, categoryMode, categories }) {
     const apiKey = process.env.NEWSDATA_IO_API_KEY
     if (!apiKey) {
       console.warn("[newsdata] NEWSDATA_IO_API_KEY が未設定です。スキップします。")
@@ -40,7 +40,8 @@ export const newsdataProvider: NewsProvider = {
     try {
       const params = new URLSearchParams({ apikey: apiKey })
       const q = buildKeywordQuery(keywords, keywordMode, notKeywords)
-      if (q) params.set("q", q)
+      const field = searchField ?? "q"
+      if (q) params.set(field, q)
       if (language) params.set("language", language)
       if (sources) {
         // ドメインURL正規化: https://, http://, www. を除去
