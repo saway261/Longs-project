@@ -62,6 +62,9 @@ export function NewsQueryEditDialog({
   const [notKeywords, setNotKeywords] = useState<string[]>(
     query?.notKeywords ? query.notKeywords.split(",").map((s) => s.trim()).filter(Boolean) : [],
   )
+  const [apiDomain, setApiDomain] = useState<"newsdata.io" | "fashionsnap.com">(
+    (query?.domains as "newsdata.io" | "fashionsnap.com") ?? "newsdata.io",
+  )
   const [sourceInput, setSourceInput] = useState("")
   const [sources, setSources] = useState<string[]>(
     query?.sources ? query.sources.split(",").map((s) => s.trim()).filter(Boolean) : [],
@@ -86,6 +89,7 @@ export function NewsQueryEditDialog({
   useEffect(() => {
     if (!open) return
     setName(query?.name ?? "")
+    setApiDomain((query?.domains as "newsdata.io" | "fashionsnap.com") ?? "newsdata.io")
     setKeywordMode(query?.keywordMode ?? "AND")
     setSearchField(query?.searchField ?? "qInMeta")
     setKeywordInput("")
@@ -153,15 +157,16 @@ export function NewsQueryEditDialog({
     try {
       await onSave({
         name: name.trim(),
-        keywords: keywords.join(",") || null,
-        keywordMode,
-        notKeywords: notKeywords.join(",") || null,
-        searchField,
-        language,
-        sources: sources.join(",") || null,
-        sourceMode: sourceMode === "none" ? null : sourceMode,
-        categoryMode: categoryMode === "none" ? null : categoryMode,
-        categories: categoryMode !== "none" && selectedCategories.length > 0
+        domains: apiDomain,
+        keywords: apiDomain === "newsdata.io" ? (keywords.join(",") || null) : null,
+        keywordMode: apiDomain === "newsdata.io" ? keywordMode : null,
+        notKeywords: apiDomain === "newsdata.io" ? (notKeywords.join(",") || null) : null,
+        searchField: apiDomain === "newsdata.io" ? searchField : null,
+        language: apiDomain === "newsdata.io" ? language : null,
+        sources: apiDomain === "newsdata.io" ? (sources.join(",") || null) : null,
+        sourceMode: apiDomain === "newsdata.io" ? (sourceMode === "none" ? null : sourceMode) : null,
+        categoryMode: apiDomain === "newsdata.io" ? (categoryMode === "none" ? null : categoryMode) : null,
+        categories: apiDomain === "newsdata.io" && categoryMode !== "none" && selectedCategories.length > 0
           ? selectedCategories.join(",")
           : null,
       })
@@ -205,8 +210,23 @@ export function NewsQueryEditDialog({
             />
           </div>
 
+          {/* ニュースAPI */}
+          <div className="space-y-1.5">
+            <Label>ニュースAPI</Label>
+            <Select value={apiDomain} onValueChange={(v: string) => setApiDomain(v as "newsdata.io" | "fashionsnap.com")}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newsdata.io">newsdata.io</SelectItem>
+                <SelectItem value="fashionsnap.com">fashionsnap.com (RSS)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* キーワード */}
-          <div className="space-y-3">
+          {apiDomain === "newsdata.io" && <div className="space-y-3">
+
             <div className="space-y-1.5">
               <Label>キーワード</Label>
               <div className="flex gap-2">
@@ -305,125 +325,122 @@ export function NewsQueryEditDialog({
                 </div>
               )}
             </div>
-          </div>
+          </div>}
 
-          {/* ソース */}
-          <div className="space-y-2">
-            <Label>ソース（ドメインURL）</Label>
-            <Select value={sourceMode} onValueChange={(v: string) => {
-              setSourceMode(v as "include" | "exclude" | "none")
-              setSources([])
-            }}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">指定なし</SelectItem>
-                <SelectItem value="include">含むソースを指定</SelectItem>
-                <SelectItem value="exclude">除外するソースを指定</SelectItem>
-              </SelectContent>
-            </Select>
-            {sourceMode !== "none" && (
-              <>
-                <p className="text-xs text-muted-foreground">最大5つまで指定できます（{sources.length}/5）</p>
-                <div className="flex gap-2">
-                  <Input
-                    value={sourceInput}
-                    onChange={(e) => setSourceInput(e.target.value)}
-                    placeholder="例: nhk.or.jp, reuters.com"
-                    onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addSource())}
-                    disabled={sources.length >= 5}
-                  />
-                  <Button type="button" variant="outline" size="sm" onClick={addSource} disabled={sources.length >= 5}>
-                    追加
-                  </Button>
-                </div>
-                {sources.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-1">
-                    {sources.map((src) => (
-                      <TagBadge key={src} className="gap-1">
-                        {src}
-                        <button onClick={() => removeSource(src)} className="hover:opacity-70">
-                          <X className="h-3 w-3" />
-                        </button>
-                      </TagBadge>
-                    ))}
+          {apiDomain === "newsdata.io" && (
+            <div className="space-y-2">
+              <Label>ソース（ドメインURL）</Label>
+              <Select value={sourceMode} onValueChange={(v: string) => {
+                setSourceMode(v as "include" | "exclude" | "none")
+                setSources([])
+              }}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">指定なし</SelectItem>
+                  <SelectItem value="include">含むソースを指定</SelectItem>
+                  <SelectItem value="exclude">除外するソースを指定</SelectItem>
+                </SelectContent>
+              </Select>
+              {sourceMode !== "none" && (
+                <>
+                  <p className="text-xs text-muted-foreground">最大5つまで指定できます（{sources.length}/5）</p>
+                  <div className="flex gap-2">
+                    <Input
+                      value={sourceInput}
+                      onChange={(e) => setSourceInput(e.target.value)}
+                      placeholder="例: nhk.or.jp, reuters.com"
+                      onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addSource())}
+                      disabled={sources.length >= 5}
+                    />
+                    <Button type="button" variant="outline" size="sm" onClick={addSource} disabled={sources.length >= 5}>
+                      追加
+                    </Button>
                   </div>
-                )}
-              </>
-            )}
-          </div>
+                  {sources.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      {sources.map((src) => (
+                        <TagBadge key={src} className="gap-1">
+                          {src}
+                          <button onClick={() => removeSource(src)} className="hover:opacity-70">
+                            <X className="h-3 w-3" />
+                          </button>
+                        </TagBadge>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
 
-          {/* カテゴリ */}
-          <div className="space-y-2">
-            <Label>カテゴリ</Label>
-            <Select value={categoryMode} onValueChange={(v: string) => {
-              setCategoryMode(v as "include" | "exclude" | "none")
-              setSelectedCategories([])
-            }}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">指定なし</SelectItem>
-                <SelectItem value="include">含むカテゴリを指定</SelectItem>
-                <SelectItem value="exclude">除外するカテゴリを指定</SelectItem>
-              </SelectContent>
-            </Select>
-            {categoryMode !== "none" && (
-              <>
-                <p className="text-xs text-muted-foreground">
-                  最大5つまで選択できます（{selectedCategories.length}/5）
-                </p>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 pt-1 max-h-48 overflow-y-auto border rounded-md p-3">
-                  {NEWSDATA_CATEGORIES.map((cat) => {
-                    const checked = selectedCategories.includes(cat)
-                    const disabled = !checked && selectedCategories.length >= 5
-                    return (
-                      <div key={cat} className="flex items-center gap-2">
-                        <Checkbox
-                          id={`cat-${cat}`}
-                          checked={checked}
-                          disabled={disabled}
-                          onCheckedChange={(c: boolean) => {
-                            setSelectedCategories((prev) =>
-                              c ? [...prev, cat] : prev.filter((x) => x !== cat),
-                            )
-                          }}
-                        />
-                        <label
-                          htmlFor={`cat-${cat}`}
-                          className={`text-sm ${disabled ? "text-muted-foreground" : "cursor-pointer"}`}
-                        >
-                          {NEWSDATA_CATEGORY_LABELS[cat]}
-                        </label>
-                      </div>
-                    )
-                  })}
-                </div>
-              </>
-            )}
-          </div>
+          {apiDomain === "newsdata.io" && (
+            <div className="space-y-2">
+              <Label>カテゴリ</Label>
+              <Select value={categoryMode} onValueChange={(v: string) => {
+                setCategoryMode(v as "include" | "exclude" | "none")
+                setSelectedCategories([])
+              }}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">指定なし</SelectItem>
+                  <SelectItem value="include">含むカテゴリを指定</SelectItem>
+                  <SelectItem value="exclude">除外するカテゴリを指定</SelectItem>
+                </SelectContent>
+              </Select>
+              {categoryMode !== "none" && (
+                <>
+                  <p className="text-xs text-muted-foreground">
+                    最大5つまで選択できます（{selectedCategories.length}/5）
+                  </p>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 pt-1 max-h-48 overflow-y-auto border rounded-md p-3">
+                    {NEWSDATA_CATEGORIES.map((cat) => {
+                      const checked = selectedCategories.includes(cat)
+                      const disabled = !checked && selectedCategories.length >= 5
+                      return (
+                        <div key={cat} className="flex items-center gap-2">
+                          <Checkbox
+                            id={`cat-${cat}`}
+                            checked={checked}
+                            disabled={disabled}
+                            onCheckedChange={(c: boolean) => {
+                              setSelectedCategories((prev) =>
+                                c ? [...prev, cat] : prev.filter((x) => x !== cat),
+                              )
+                            }}
+                          />
+                          <label
+                            htmlFor={`cat-${cat}`}
+                            className={`text-sm ${disabled ? "text-muted-foreground" : "cursor-pointer"}`}
+                          >
+                            {NEWSDATA_CATEGORY_LABELS[cat]}
+                          </label>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
 
-          {/* APIドメイン（読み取り専用） */}
-          <div className="space-y-1.5">
-            <Label>ニュースAPI</Label>
-            <Input value="newsdata.io" readOnly className="bg-muted text-muted-foreground cursor-default" />
-          </div>
-
-          {/* 言語 */}
-          <div className="space-y-1.5">
-            <Label>言語</Label>
-            <Select value={language} onValueChange={setLanguage}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ja">日本語 (ja)</SelectItem>
-                <SelectItem value="en">英語 (en)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {apiDomain === "newsdata.io" && (
+            <div className="space-y-1.5">
+              <Label>言語</Label>
+              <Select value={language} onValueChange={setLanguage}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ja">日本語 (ja)</SelectItem>
+                  <SelectItem value="en">英語 (en)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {error && <p className="text-sm text-destructive">{error}</p>}
         </div>

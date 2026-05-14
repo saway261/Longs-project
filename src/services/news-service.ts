@@ -1,6 +1,7 @@
 import { prisma } from "@/src/lib/prisma"
 import { getWeekStart } from "@/src/lib/news-week"
 import { newsdataProvider } from "@/src/lib/news-providers/newsdata"
+import { fashionsnapRssProvider } from "@/src/lib/news-providers/fashionsnap-rss"
 import type { NewsProvider } from "@/src/lib/news-providers/types"
 import { embedText } from "@/src/lib/gemini"
 import { getDefaultExcludedSources } from "@/src/services/system-setting-service"
@@ -164,7 +165,10 @@ export async function deleteArticle(id: string): Promise<void> {
 
 // ─── ニュース取得・保存 ────────────────────────────────────────────
 
-const provider: NewsProvider = newsdataProvider
+function selectProvider(domains: string | null): NewsProvider {
+  if (domains === "fashionsnap.com") return fashionsnapRssProvider
+  return newsdataProvider
+}
 
 /** 全アクティブクエリでニュースを取得してDBに保存 */
 export async function fetchAndStoreAllActiveQueries(): Promise<void> {
@@ -186,6 +190,7 @@ export async function fetchAndStoreAllActiveQueries(): Promise<void> {
       }
 
       try {
+        const provider = selectProvider(q.domains)
         const articles = await provider.fetch({
           keywords: q.keywords,
           keywordMode: q.keywordMode,
