@@ -1,8 +1,8 @@
 import { prisma } from "@/src/lib/prisma"
 import { getWeekEnd, formatWeekRange } from "@/src/lib/news-week"
-import { generateFactorAnalysis, generateNewsSummary, generateCategoryTrendAdvice } from "@/src/lib/gemini"
+import { generateFactorAnalysis, generateNewsSummary, generateCategoryTrendAdvice, generateInventoryActionRecommendations } from "@/src/lib/gemini"
 import { listActiveQueries } from "@/src/services/news-service"
-import type { FactorType, NewsImpact } from "@prisma/client"
+import type { FactorType, NewsImpact, ActionType, ActionPriority, ActionStatus, SourceTable } from "@prisma/client"
 
 export type { FactorType }
 
@@ -423,6 +423,234 @@ function toCategoryAdviceDTO(row: {
     trend,
     content: row.content,
     generatedAt: row.generatedAt,
+  }
+}
+
+// ============================================================
+// ActionRecommendation
+// ============================================================
+
+export interface ActionRecommendationSourceDTO {
+  id: string
+  sourceTable: SourceTable
+  periodFrom: Date | null
+  periodTo: Date | null
+  evidence: string | null
+}
+
+export interface ActionRecommendationDTO {
+  id: string
+  weekStart: Date
+  actionType: ActionType
+  title: string
+  description: string
+  priority: ActionPriority
+  sortScore: number
+  boostedCount: number
+  lastBoostedAt: Date | null
+  status: ActionStatus
+  generatedAt: Date
+  actedAt: Date | null
+  sources: ActionRecommendationSourceDTO[]
+}
+
+/** 在庫スナップショットCSVを生成（期間指定） */
+async function exportInventoryCsv(periodFrom: Date, periodTo: Date): Promise<string> {
+  const rows = await prisma.inventorySnapshotFact.findMany({
+    where: { deletedAt: null, periodYm: { gte: periodFrom, lte: periodTo } },
+    orderBy: [{ periodYm: "asc" }, { productCode: "asc" }],
+    take: 500,
+  })
+  if (rows.length === 0) return ""
+  const headers = "期間,商品コード,商品名,ブランドコード,ブランド名,CS1,CS2,期首数量,期首金額,期末数量,期末金額"
+  const csvRows = rows.map((r) =>
+    [
+      r.periodYm?.toISOString().slice(0, 7) ?? "",
+      r.productCode ?? "",
+      r.productName ?? "",
+      r.brandCode ?? "",
+      r.brandName ?? "",
+      r.cs1Name ?? "",
+      r.cs2Name ?? "",
+      r.openingQty ?? 0,
+      r.openingYen?.toString() ?? "0",
+      r.closingQty ?? 0,
+      r.closingYen?.toString() ?? "0",
+    ].join(",")
+  )
+  return [headers, ...csvRows].join("\n")
+}
+
+/** 売上ファクトCSVを生成（期間指定） */
+async function exportSalesCsv(periodFrom: Date, periodTo: Date): Promise<string> {
+  const rows = await prisma.salesFact.findMany({
+    where: { deletedAt: null, periodYm: { gte: periodFrom, lte: periodTo } },
+    orderBy: [{ periodYm: "asc" }, { productCode: "asc" }],
+    take: 500,
+  })
+  if (rows.length === 0) return ""
+  const headers = "期間,ブランドコード,ブランド名,商品コード,商品名,販売数量,定価,純売上,粗利,粗利率"
+  const csvRows = rows.map((r) =>
+    [
+      r.periodYm?.toISOString().slice(0, 7) ?? "",
+      r.brandCode ?? "",
+      r.brandName ?? "",
+      r.productCode ?? "",
+      r.productName1 ?? "",
+      r.netQty ?? 0,
+      r.listPriceYen?.toString() ?? "0",
+      r.netSalesYen?.toString() ?? "0",
+      r.grossProfitYen?.toString() ?? "0",
+      r.grossProfitRate?.toString() ?? "0",
+    ].join(",")
+  )
+  return [headers, ...csvRows].join("\n")
+}
+
+const PRIORITY_SCORE: Record<ActionPriority, number> = {
+  high: 1000,
+  medium: 500,
+  low: 100,
+}
+
+/** 指定週のアクション候補をGeminiで生成し保存（既存分は削除して入れ替え） */
+export async function generateInventoryActions(
+  weekStart: Date,
+  queryGroupIds: string[],
+  periodFrom: Date,
+  periodTo: Date,
+): Promise<ActionRecommendationDTO[]> {
+  const weekLabel = formatWeekRange(weekStart)
+
+  // 選択されたフィルターの週次要約を取得
+  const summaryFilter = queryGroupIds.length > 0
+    ? { queryGroupId: { in: queryGroupIds }, weekStart }
+    : { weekStart }
+  const summaryRows = await prisma.weeklyNewsSummary.findMany({
+    where: summaryFilter,
+    orderBy: { generatedAt: "asc" },
+  })
+  const newsSummaries = summaryRows.map((r) => ({ queryName: r.queryName, content: r.content }))
+
+  // CSV出力
+  const [inventoryCsv, salesCsv] = await Promise.all([
+    exportInventoryCsv(periodFrom, periodTo),
+    exportSalesCsv(periodFrom, periodTo),
+  ])
+
+  // Gemini呼び出し
+  const results = await generateInventoryActionRecommendations(weekLabel, newsSummaries, inventoryCsv, salesCsv)
+
+  // 当週の既存レコードを削除（入れ替え）
+  await prisma.actionRecommendation.deleteMany({ where: { weekStart } })
+
+  // 3件保存
+  const saved: ActionRecommendationDTO[] = []
+  for (const item of results) {
+    const priority = item.priority as ActionPriority
+    const rec = await prisma.actionRecommendation.create({
+      data: {
+        weekStart,
+        actionType: item.actionType as ActionType,
+        title: item.title,
+        description: item.description,
+        priority,
+        sortScore: PRIORITY_SCORE[priority],
+        status: "pending",
+        sources: {
+          create: [
+            {
+              sourceTable: "inventory_snapshot_fact" as SourceTable,
+              periodFrom,
+              periodTo,
+              evidence: `在庫スナップショット: ${periodFrom.toISOString().slice(0, 7)} ～ ${periodTo.toISOString().slice(0, 7)}`,
+            },
+            {
+              sourceTable: "sales_fact" as SourceTable,
+              periodFrom,
+              periodTo,
+              evidence: `売上データ: ${periodFrom.toISOString().slice(0, 7)} ～ ${periodTo.toISOString().slice(0, 7)}`,
+            },
+            ...(summaryRows.length > 0
+              ? [
+                  {
+                    sourceTable: "weekly_news_summary" as SourceTable,
+                    periodFrom: weekStart,
+                    periodTo: weekStart,
+                    evidence: `週次ニュース要約（${summaryRows.map((s) => s.queryName).join("、")}）`,
+                  },
+                ]
+              : []),
+          ],
+        },
+      },
+      include: { sources: true },
+    })
+    saved.push(toActionRecommendationDTO(rec))
+  }
+
+  return saved
+}
+
+/** アクション候補を取得（weekStart 指定で週絞り込み、省略で全件） */
+export async function getActionRecommendations(weekStart?: Date): Promise<ActionRecommendationDTO[]> {
+  const rows = await prisma.actionRecommendation.findMany({
+    where: weekStart ? { weekStart } : undefined,
+    include: { sources: true },
+    orderBy: [{ sortScore: "desc" }, { generatedAt: "desc" }],
+  })
+  return rows.map(toActionRecommendationDTO)
+}
+
+/** アクションのステータスを更新（accepted / dismissed） */
+export async function updateActionStatus(
+  id: string,
+  status: "accepted" | "dismissed",
+  userId: string,
+): Promise<ActionRecommendationDTO> {
+  const rec = await prisma.actionRecommendation.update({
+    where: { id },
+    data: { status: status as ActionStatus, actedAt: new Date(), actedBy: userId },
+    include: { sources: true },
+  })
+  return toActionRecommendationDTO(rec)
+}
+
+function toActionRecommendationDTO(row: {
+  id: string
+  weekStart: Date
+  actionType: ActionType
+  title: string
+  description: string
+  priority: ActionPriority
+  sortScore: number
+  boostedCount: number
+  lastBoostedAt: Date | null
+  status: ActionStatus
+  generatedAt: Date
+  actedAt: Date | null
+  sources: { id: string; sourceTable: SourceTable; periodFrom: Date | null; periodTo: Date | null; evidence: string | null }[]
+}): ActionRecommendationDTO {
+  return {
+    id: row.id,
+    weekStart: row.weekStart,
+    actionType: row.actionType,
+    title: row.title,
+    description: row.description,
+    priority: row.priority,
+    sortScore: row.sortScore,
+    boostedCount: row.boostedCount,
+    lastBoostedAt: row.lastBoostedAt,
+    status: row.status,
+    generatedAt: row.generatedAt,
+    actedAt: row.actedAt,
+    sources: row.sources.map((s) => ({
+      id: s.id,
+      sourceTable: s.sourceTable,
+      periodFrom: s.periodFrom,
+      periodTo: s.periodTo,
+      evidence: s.evidence,
+    })),
   }
 }
 

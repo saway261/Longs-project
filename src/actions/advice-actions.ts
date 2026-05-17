@@ -2,9 +2,9 @@
 
 import { requireRole } from "@/src/lib/permissions"
 import * as svc from "@/src/services/advice-service"
-import type { FactorQueryConfigDTO, WeeklyFactorAnalysisDTO, WeeklyNewsSummaryDTO, FactorType, WeekCategorySelectionDTO, WeeklyCategoryAdviceDTO } from "@/src/services/advice-service"
+import type { FactorQueryConfigDTO, WeeklyFactorAnalysisDTO, WeeklyNewsSummaryDTO, FactorType, WeekCategorySelectionDTO, WeeklyCategoryAdviceDTO, ActionRecommendationDTO } from "@/src/services/advice-service"
 
-export type { FactorQueryConfigDTO, WeeklyFactorAnalysisDTO, WeeklyNewsSummaryDTO, FactorType, WeekCategorySelectionDTO, WeeklyCategoryAdviceDTO }
+export type { FactorQueryConfigDTO, WeeklyFactorAnalysisDTO, WeeklyNewsSummaryDTO, FactorType, WeekCategorySelectionDTO, WeeklyCategoryAdviceDTO, ActionRecommendationDTO }
 
 // ─── FactorQueryConfig ────────────────────────────────────────
 
@@ -219,5 +219,65 @@ export async function generateWeeklyCategoryAdviceAction(
     }
     console.error("[generateWeeklyCategoryAdviceAction]", e)
     return { success: false, error: "アドバイスの生成に失敗しました" }
+  }
+}
+
+// ─── ActionRecommendation ─────────────────────────────────────
+
+export async function generateInventoryActionsAction(
+  weekStartIso: string,
+  queryGroupIds: string[],
+  periodFromIso: string,
+  periodToIso: string,
+): Promise<{ success: true; data: ActionRecommendationDTO[] } | { success: false; error: string }> {
+  try {
+    await requireRole(["admin", "manager"])
+    const data = await svc.generateInventoryActions(
+      new Date(weekStartIso),
+      queryGroupIds,
+      new Date(periodFromIso),
+      new Date(periodToIso),
+    )
+    return { success: true, data }
+  } catch (e) {
+    if (e instanceof Error && (e.message === "認証が必要です" || e.message === "権限がありません")) {
+      return { success: false, error: e.message }
+    }
+    if (e instanceof Error) return { success: false, error: e.message }
+    console.error("[generateInventoryActionsAction]", e)
+    return { success: false, error: "アクション候補の生成に失敗しました" }
+  }
+}
+
+export async function getActionRecommendationsAction(
+  weekStartIso?: string,
+): Promise<{ success: true; data: ActionRecommendationDTO[] } | { success: false; error: string }> {
+  try {
+    await requireRole(["admin", "manager"])
+    const data = await svc.getActionRecommendations(weekStartIso ? new Date(weekStartIso) : undefined)
+    return { success: true, data }
+  } catch (e) {
+    if (e instanceof Error && (e.message === "認証が必要です" || e.message === "権限がありません")) {
+      return { success: false, error: e.message }
+    }
+    console.error("[getActionRecommendationsAction]", e)
+    return { success: false, error: "アクション候補の取得に失敗しました" }
+  }
+}
+
+export async function updateActionStatusAction(
+  id: string,
+  status: "accepted" | "dismissed",
+): Promise<{ success: true; data: ActionRecommendationDTO } | { success: false; error: string }> {
+  try {
+    const session = await requireRole(["admin", "manager"])
+    const data = await svc.updateActionStatus(id, status, session.userId)
+    return { success: true, data }
+  } catch (e) {
+    if (e instanceof Error && (e.message === "認証が必要です" || e.message === "権限がありません")) {
+      return { success: false, error: e.message }
+    }
+    console.error("[updateActionStatusAction]", e)
+    return { success: false, error: "ステータスの更新に失敗しました" }
   }
 }

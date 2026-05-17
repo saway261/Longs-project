@@ -349,6 +349,93 @@ export async function generateNewsSummary(
 }
 
 // ============================================================
+// 在庫データ分析アクション生成
+// ============================================================
+
+export interface InventoryActionResult {
+  actionType: "procurement" | "sales_promotion" | "inventory" | "finance" | "category"
+  title: string
+  description: string
+  priority: "high" | "medium" | "low"
+}
+
+export async function generateInventoryActionRecommendations(
+  weekLabel: string,
+  newsSummaries: { queryName: string; content: string }[],
+  inventoryCsv: string,
+  salesCsv: string,
+): Promise<InventoryActionResult[]> {
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) throw new Error("GEMINI_API_KEY が設定されていません")
+
+  const ai = new GoogleGenAI({ apiKey })
+
+  const summaryText = newsSummaries.length > 0
+    ? newsSummaries.map((s) => `【${s.queryName}】\n${s.content}`).join("\n\n")
+    : "（ニュース要約なし）"
+
+  const systemPrompt =
+    `あなたはアパレル企業の経営コンサルタントです。以下の情報をもとに、経営者が即座に実行できる具体的なアクション候補を3件提案してください。\n\n` +
+    `【提案の視点（優先順）】\n` +
+    `1. 発注・仕入れの増減（数量調整、タイミング変更、取引先への交渉）\n` +
+    `2. 在庫処分・活用（値引き販促、在庫移動、廃棄判断）\n` +
+    `3. 販売戦略の調整（価格帯変更、販売チャネル）\n\n` +
+    `【制約】\n` +
+    `・在庫データ・売上データの実数値を根拠として含めること\n` +
+    `・抽象的な提言ではなく具体的な商品名・ブランド名・金額を含めること（データに存在する場合）\n` +
+    `・actionType は procurement / sales_promotion / inventory / finance / category のいずれか\n\n` +
+    `必ず次のJSON配列のみで回答してください（3件）:\n` +
+    `[{"actionType":"...", "title":"タイトル（30文字以内）", "description":"詳細説明（150文字以内）", "priority":"high|medium|low"}, ...]`
+
+  const prompt =
+    `${systemPrompt}\n\n` +
+    `対象週: ${weekLabel}\n\n` +
+    `## 今週のニュース要約\n${summaryText}\n\n` +
+    `## 在庫スナップショットデータ（CSV）\n${inventoryCsv || "（データなし）"}\n\n` +
+    `## 売上データ（CSV）\n${salesCsv || "（データなし）"}`
+
+  console.log("[generateInventoryActionRecommendations] Request:", JSON.stringify({
+    model: FACTOR_TEXT_MODEL,
+    weekLabel,
+    summaryCount: newsSummaries.length,
+    inventoryRows: inventoryCsv.split("\n").length - 1,
+    salesRows: salesCsv.split("\n").length - 1,
+    promptLength: prompt.length,
+  }, null, 2))
+
+  const response = await ai.models.generateContent({
+    model: FACTOR_TEXT_MODEL,
+    contents: [{ text: prompt }],
+  })
+
+  const text = response.candidates?.[0]?.content?.parts?.[0]?.text ?? ""
+
+  console.log("[generateInventoryActionRecommendations] Response:", JSON.stringify({
+    rawText: text,
+    usageMetadata: response.usageMetadata,
+  }, null, 2))
+
+  const jsonMatch = text.match(/\[[\s\S]*\]/)
+  if (!jsonMatch) {
+    throw new Error("アクション候補の生成に失敗しました（JSON未検出）")
+  }
+
+  const parsed = JSON.parse(jsonMatch[0]) as InventoryActionResult[]
+  return parsed.slice(0, 3).map((item) => ({
+    actionType: (["procurement", "sales_promotion", "inventory", "finance", "category"] as const).includes(
+      item.actionType as "procurement"
+    )
+      ? item.actionType
+      : "inventory",
+    title: String(item.title ?? "").slice(0, 30),
+    description: String(item.description ?? "").slice(0, 150),
+    priority: (["high", "medium", "low"] as const).includes(item.priority as "high")
+      ? item.priority
+      : "medium",
+  }))
+}
+
+// ============================================================
 // Gemini Embedding
 // ============================================================
 

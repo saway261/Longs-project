@@ -18,6 +18,9 @@ import {
   Settings2,
   X,
   Loader2,
+  Package,
+  Sparkles,
+  ExternalLink,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -53,31 +56,12 @@ import {
   removeCategorySelectionAction,
   getWeeklyCategoryAdvicesAction,
   generateWeeklyCategoryAdviceAction,
+  generateInventoryActionsAction,
+  getActionRecommendationsAction,
 } from "@/src/actions/advice-actions"
-import type { FactorQueryConfigDTO, WeeklyFactorAnalysisDTO, WeeklyNewsSummaryDTO, FactorType, WeekCategorySelectionDTO, WeeklyCategoryAdviceDTO } from "@/src/actions/advice-actions"
+import type { FactorQueryConfigDTO, WeeklyFactorAnalysisDTO, WeeklyNewsSummaryDTO, FactorType, WeekCategorySelectionDTO, WeeklyCategoryAdviceDTO, ActionRecommendationDTO } from "@/src/actions/advice-actions"
 import type { CategoryDTO } from "@/src/services/settings-service"
 import { Input } from "@/components/ui/input"
-
-const inventoryDataInsights = [
-  {
-    title: "在庫回転率の改善余地",
-    summary: "アウターの回転率が目標に対して低下。重点SKUの値引きと発注抑制が必要。",
-    metric: "回転率: 2.5 / 目標 3.0",
-    impact: "high",
-  },
-  {
-    title: "カテゴリ別売上構成の偏り",
-    summary: "トップス比率が高止まり。ボトムスの売上構成を増やす施策が必要。",
-    metric: "トップス比率: 35%",
-    impact: "medium",
-  },
-  {
-    title: "在庫アラートの増加",
-    summary: "在庫不足アラートが前月比で増加。補充リードタイムの短縮が課題。",
-    metric: "在庫不足: 128件",
-    impact: "high",
-  },
-]
 
 // ─── 影響要因の定義 ────────────────────────────────────────────────────────
 
@@ -157,9 +141,10 @@ interface Props {
   initialAllCategories: CategoryDTO[]
   initialCategorySelections: WeekCategorySelectionDTO[]
   initialCategoryAdvices: WeeklyCategoryAdviceDTO[]
+  initialInventoryActions: ActionRecommendationDTO[]
 }
 
-export function AdviceNewsShell({ initialData, initialWeekStart, initialQueries, initialDefaultExcludedSources, initialFactorConfigs, initialFactorAnalyses, initialNewsSummaries, flexibleAnalysis = false, initialAllCategories, initialCategorySelections, initialCategoryAdvices }: Props) {
+export function AdviceNewsShell({ initialData, initialWeekStart, initialQueries, initialDefaultExcludedSources, initialFactorConfigs, initialFactorAnalyses, initialNewsSummaries, flexibleAnalysis = false, initialAllCategories, initialCategorySelections, initialCategoryAdvices, initialInventoryActions }: Props) {
   const [weekStart, setWeekStart] = useState<Date>(initialWeekStart)
 
   // ─── 週ラベル ─────────────────────────────────────────────────
@@ -203,6 +188,48 @@ export function AdviceNewsShell({ initialData, initialWeekStart, initialQueries,
   const [categorySelectOpen, setCategorySelectOpen] = useState(false)
   const [isUpdatingSelection, startUpdatingSelection] = useTransition()
 
+  // ─── 在庫データアクション state ──────────────────────────────────
+
+  // 在庫データ期間（YYYY-MM形式）
+  const defaultPeriodTo = new Date().toISOString().slice(0, 7)
+  const defaultPeriodFrom = (() => {
+    const d = new Date()
+    d.setMonth(d.getMonth() - 2)
+    return d.toISOString().slice(0, 7)
+  })()
+  const [inventoryPeriodFrom, setInventoryPeriodFrom] = useState(defaultPeriodFrom)
+  const [inventoryPeriodTo, setInventoryPeriodTo] = useState(defaultPeriodTo)
+  // 使用するニュース要約フィルターのqueryGroupId（空=全て）
+  const [selectedSummaryGroupIds, setSelectedSummaryGroupIds] = useState<string[]>([])
+  const [inventoryActions, setInventoryActions] = useState<ActionRecommendationDTO[]>(initialInventoryActions)
+  const [isGeneratingActions, startGeneratingActions] = useTransition()
+  const [actionError, setActionError] = useState<string | null>(null)
+  const [summaryFilterOpen, setSummaryFilterOpen] = useState(false)
+
+  function handleGenerateInventoryActions() {
+    setActionError(null)
+    startGeneratingActions(async () => {
+      const periodFromDate = new Date(`${inventoryPeriodFrom}-01T00:00:00Z`)
+      // 月末日を計算
+      const [fy, fm] = inventoryPeriodTo.split("-").map(Number)
+      const periodToDate = new Date(Date.UTC(fy, fm, 0)) // 翌月0日 = 当月末
+      const groupIds = selectedSummaryGroupIds.length > 0
+        ? selectedSummaryGroupIds
+        : newsSummaries.map((s) => s.queryGroupId)
+      const res = await generateInventoryActionsAction(
+        weekStart.toISOString(),
+        groupIds,
+        periodFromDate.toISOString(),
+        periodToDate.toISOString(),
+      )
+      if (res.success) {
+        setInventoryActions(res.data)
+      } else {
+        setActionError(res.error)
+      }
+    })
+  }
+
   // ─── デフォルト除外ソース設定 ─────────────────────────────────────
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [defaultExcludedSources, setDefaultExcludedSources] = useState<string[]>(
@@ -241,7 +268,7 @@ export function AdviceNewsShell({ initialData, initialWeekStart, initialQueries,
     })
   }, [])
 
-  // weekStart 変化時に関連ニュースと factor 分析結果・サマリー・カテゴリを再取得
+  // weekStart 変化時に関連ニュースと factor 分析結果・サマリー・カテゴリ・アクションを再取得
   const prevWeekStart = useRef<number | null>(null)
   useEffect(() => {
     const t = weekStart.getTime()
@@ -249,16 +276,18 @@ export function AdviceNewsShell({ initialData, initialWeekStart, initialQueries,
       loadNewsView(weekStart)
       setArticlesExpanded({})
       startRunningAnalysis(async () => {
-        const [factorRes, summaryRes, selRes, advRes] = await Promise.all([
+        const [factorRes, summaryRes, selRes, advRes, actionRes] = await Promise.all([
           getWeeklyFactorAnalysesAction(weekStart.toISOString()),
           getWeeklyNewsSummariesAction(weekStart.toISOString()),
           getCategorySelectionsAction(weekStart.toISOString()),
           getWeeklyCategoryAdvicesAction(weekStart.toISOString()),
+          getActionRecommendationsAction(weekStart.toISOString()),
         ])
         if (factorRes.success) setFactorAnalyses(factorRes.data)
         if (summaryRes.success) setNewsSummaries(summaryRes.data)
         if (selRes.success) setCategorySelections(selRes.data)
         if (advRes.success) setCategoryAdvices(advRes.data)
+        if (actionRes.success) setInventoryActions(actionRes.data)
       })
     }
     prevWeekStart.current = t
@@ -742,30 +771,169 @@ export function AdviceNewsShell({ initialData, initialWeekStart, initialQueries,
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">在庫データ分析からのアドバイス</CardTitle>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {inventoryDataInsights.map((item) => (
-              <div key={item.title} className="rounded-xl border border-border/70 p-4 space-y-2">
-                <div className="flex items-center justify-between">
-                  <p className="font-semibold text-foreground">{item.title}</p>
-                  <Badge
-                    className={cn(
-                      "text-[11px]",
-                      item.impact === "high"
-                        ? "bg-red-100 text-red-700"
-                        : item.impact === "medium"
-                          ? "bg-yellow-100 text-yellow-700"
-                          : "bg-green-100 text-green-700",
-                    )}
-                  >
-                    影響度: {item.impact === "high" ? "高" : item.impact === "medium" ? "中" : "低"}
-                  </Badge>
-                </div>
-                <p className="text-xs text-muted-foreground">{item.metric}</p>
-                <p className="text-sm text-muted-foreground">{item.summary}</p>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Package className="w-4 h-4 text-primary" />
+                  在庫データ分析からのアドバイス
+                </CardTitle>
+                <p className="text-xs text-muted-foreground mt-1">
+                  在庫・売上データとニュース要約をもとに、今週の経営アクション候補を3件生成します。
+                </p>
               </div>
-            ))}
+              <a
+                href="/advice/actions"
+                className="flex items-center gap-1 text-xs text-primary hover:underline mt-1"
+              >
+                最適アクション候補ページ
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* 生成コントロール */}
+            <div className="rounded-xl border border-border/70 bg-muted/30 p-4 space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* 在庫データ期間 */}
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground">在庫・売上データ期間</p>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="month"
+                      value={inventoryPeriodFrom}
+                      onChange={(e) => setInventoryPeriodFrom(e.target.value)}
+                      className="h-8 rounded-md border border-input bg-background px-2 text-sm flex-1"
+                    />
+                    <span className="text-xs text-muted-foreground shrink-0">〜</span>
+                    <input
+                      type="month"
+                      value={inventoryPeriodTo}
+                      onChange={(e) => setInventoryPeriodTo(e.target.value)}
+                      className="h-8 rounded-md border border-input bg-background px-2 text-sm flex-1"
+                    />
+                  </div>
+                </div>
+
+                {/* ニュース要約フィルター */}
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground">参照するニュース要約</p>
+                  <Popover open={summaryFilterOpen} onOpenChange={setSummaryFilterOpen}>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm" className="w-full justify-between text-left font-normal h-8">
+                        <span className={cn("text-sm", selectedSummaryGroupIds.length === 0 && "text-muted-foreground")}>
+                          {selectedSummaryGroupIds.length === 0
+                            ? "全フィルターを使用"
+                            : `${selectedSummaryGroupIds.length}件選択中`}
+                        </span>
+                        <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-64 p-2" align="start">
+                      {newsSummaries.length === 0 ? (
+                        <p className="text-sm text-muted-foreground px-2 py-1">
+                          この週の要約レポートがありません
+                        </p>
+                      ) : (
+                        <div className="space-y-1">
+                          <label className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted cursor-pointer">
+                            <Checkbox
+                              checked={selectedSummaryGroupIds.length === 0}
+                              onCheckedChange={(checked: boolean | "indeterminate") => {
+                                if (checked === true) setSelectedSummaryGroupIds([])
+                              }}
+                            />
+                            <span className="text-sm leading-none text-muted-foreground">全て使用</span>
+                          </label>
+                          {newsSummaries.map((s) => (
+                            <label
+                              key={s.queryGroupId}
+                              className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted cursor-pointer"
+                            >
+                              <Checkbox
+                                checked={selectedSummaryGroupIds.includes(s.queryGroupId)}
+                                onCheckedChange={(checked: boolean | "indeterminate") => {
+                                  if (checked === true) {
+                                    setSelectedSummaryGroupIds((prev) => [...prev, s.queryGroupId])
+                                  } else {
+                                    setSelectedSummaryGroupIds((prev) => prev.filter((id) => id !== s.queryGroupId))
+                                  }
+                                }}
+                              />
+                              <span className="text-sm leading-none">{s.queryName}</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+
+              <Button
+                size="sm"
+                onClick={handleGenerateInventoryActions}
+                disabled={isGeneratingActions || !inventoryPeriodFrom || !inventoryPeriodTo}
+                className="w-full sm:w-auto"
+              >
+                {isGeneratingActions ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+                    生成中...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 mr-1.5" />
+                    アクション候補を生成
+                  </>
+                )}
+              </Button>
+              {actionError && <p className="text-xs text-destructive">{actionError}</p>}
+            </div>
+
+            {/* アクションカード */}
+            {inventoryActions.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-muted-foreground/30 bg-muted/10 p-6 text-center text-sm text-muted-foreground">
+                期間とフィルターを選択して「アクション候補を生成」をクリックしてください。
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {inventoryActions.map((action) => (
+                  <div key={action.id} className="rounded-xl border border-border/70 p-4 space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <Badge
+                        variant="outline"
+                        className="text-[11px]"
+                      >
+                        {action.actionType === "procurement" ? "発注・仕入"
+                          : action.actionType === "sales_promotion" ? "販促・値引"
+                          : action.actionType === "inventory" ? "在庫調整"
+                          : action.actionType === "finance" ? "財務・資金"
+                          : "カテゴリ戦略"}
+                      </Badge>
+                      <Badge
+                        className={cn(
+                          "text-[11px]",
+                          action.priority === "high"
+                            ? "bg-red-100 text-red-700"
+                            : action.priority === "medium"
+                              ? "bg-yellow-100 text-yellow-700"
+                              : "bg-green-100 text-green-700",
+                        )}
+                      >
+                        重要度: {action.priority === "high" ? "高" : action.priority === "medium" ? "中" : "低"}
+                      </Badge>
+                    </div>
+                    <p className="font-semibold text-foreground text-sm">{action.title}</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{action.description}</p>
+                    {action.sources.length > 0 && (
+                      <p className="text-[11px] text-muted-foreground/70 leading-relaxed">
+                        根拠: {action.sources.map((s) => s.evidence).filter(Boolean).join(" / ")}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

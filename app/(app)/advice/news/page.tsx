@@ -1,6 +1,6 @@
 import { getWeekStart } from "@/src/lib/news-week"
 import { getNewsViewAction, listActiveQueriesAction, getDefaultExcludedSourcesAction } from "@/src/actions/news-actions"
-import { getFactorConfigsAction, getWeeklyFactorAnalysesAction, getWeeklyNewsSummariesAction, getCategorySelectionsAction, getWeeklyCategoryAdvicesAction } from "@/src/actions/advice-actions"
+import { getFactorConfigsAction, getWeeklyFactorAnalysesAction, getWeeklyNewsSummariesAction, getCategorySelectionsAction, getWeeklyCategoryAdvicesAction, getActionRecommendationsAction } from "@/src/actions/advice-actions"
 import { getCategoriesAction } from "@/src/actions/settings-actions"
 import { AdviceNewsShell } from "@/components/feature/advice/advice-news-shell"
 
@@ -9,7 +9,7 @@ export default async function AIAdviceNewsPage() {
   const weekStartIso = weekStart.toISOString()
   const flexibleAnalysis = process.env.FACTOR_ANALYSIS_REQUIRE_WEEK_END === "false"
 
-  const [newsRes, queriesRes, defaultExcludedRes, factorConfigsRes, factorAnalysesRes, querySummariesRes, allCategoriesRes, categorySelectionsRes, categoryAdvicesRes] = await Promise.all([
+  const [newsRes, queriesRes, defaultExcludedRes, factorConfigsRes, factorAnalysesRes, querySummariesRes, allCategoriesRes, categorySelectionsRes, categoryAdvicesRes, inventoryActionsRes] = await Promise.all([
     getNewsViewAction(weekStartIso),
     listActiveQueriesAction(),
     getDefaultExcludedSourcesAction(),
@@ -19,6 +19,7 @@ export default async function AIAdviceNewsPage() {
     getCategoriesAction(),
     getCategorySelectionsAction(weekStartIso),
     getWeeklyCategoryAdvicesAction(weekStartIso),
+    getActionRecommendationsAction(weekStartIso),
   ])
 
   const initialData = newsRes.success ? newsRes.data : []
@@ -30,6 +31,7 @@ export default async function AIAdviceNewsPage() {
   const initialAllCategories = allCategoriesRes.success ? allCategoriesRes.data : []
   const initialCategorySelections = categorySelectionsRes.success ? categorySelectionsRes.data : []
   const initialCategoryAdvices = categoryAdvicesRes.success ? categoryAdvicesRes.data : []
+  const initialInventoryActions = inventoryActionsRes.success ? inventoryActionsRes.data : []
 
   return (
     <AdviceNewsShell
@@ -44,6 +46,7 @@ export default async function AIAdviceNewsPage() {
       initialAllCategories={initialAllCategories}
       initialCategorySelections={initialCategorySelections}
       initialCategoryAdvices={initialCategoryAdvices}
+      initialInventoryActions={initialInventoryActions}
     />
   )
 }
