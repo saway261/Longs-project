@@ -1,6 +1,6 @@
 import { prisma } from "@/src/lib/prisma"
 import { getWeekEnd, formatWeekRange } from "@/src/lib/news-week"
-import { generateFactorAnalysis, generateNewsSummary } from "@/src/lib/gemini"
+import { generateFactorAnalysis, generateNewsSummary, generateCategoryTrendAdvice } from "@/src/lib/gemini"
 import { listActiveQueries } from "@/src/services/news-service"
 import type { FactorType, NewsImpact } from "@prisma/client"
 
@@ -252,6 +252,181 @@ export async function generateWeeklyNewsSummaries(
 
   return results
 }
+
+// ─── WeekCategorySelection ────────────────────────────────────
+
+export interface WeekCategorySelectionDTO {
+  id: string
+  weekStart: Date
+  categoryId: string
+  categoryName: string
+}
+
+export interface WeeklyCategoryAdviceDTO {
+  id: string
+  weekStart: Date
+  categoryId: string
+  categoryName: string
+  trend: "up" | "down" | "stable"
+  content: string
+  generatedAt: Date
+}
+
+/** 指定週の選択カテゴリ一覧を取得。選択がない場合は前週（なければ直近の週）から自動継承してDBに保存する */
+export async function getCategorySelections(weekStart: Date): Promise<WeekCategorySelectionDTO[]> {
+  const rows = await prisma.weekCategorySelection.findMany({
+    where: { weekStart },
+    include: { category: true },
+    orderBy: { createdAt: "asc" },
+  })
+
+  if (rows.length > 0) {
+    return rows.map(toWeekCategorySelectionDTO)
+  }
+
+  // 前週を優先、なければ直近で選択がある週を探す
+  const prevWeekStart = new Date(weekStart)
+  prevWeekStart.setUTCDate(prevWeekStart.getUTCDate() - 7)
+
+  let sourceRows = await prisma.weekCategorySelection.findMany({
+    where: { weekStart: prevWeekStart },
+    include: { category: true },
+  })
+
+  if (sourceRows.length === 0) {
+    const mostRecentWeek = await prisma.weekCategorySelection.findFirst({
+      where: { weekStart: { lt: weekStart } },
+      orderBy: { weekStart: "desc" },
+      select: { weekStart: true },
+    })
+    if (mostRecentWeek) {
+      sourceRows = await prisma.weekCategorySelection.findMany({
+        where: { weekStart: mostRecentWeek.weekStart },
+        include: { category: true },
+      })
+    }
+  }
+
+  if (sourceRows.length === 0) return []
+
+  // 継承元の選択を今週にコピー（削除済みカテゴリは除外）
+  await prisma.weekCategorySelection.createMany({
+    data: sourceRows
+      .filter((s) => s.category.deletedAt === null)
+      .map((s) => ({ weekStart, categoryId: s.categoryId })),
+    skipDuplicates: true,
+  })
+
+  const inherited = await prisma.weekCategorySelection.findMany({
+    where: { weekStart },
+    include: { category: true },
+    orderBy: { createdAt: "asc" },
+  })
+  return inherited.map(toWeekCategorySelectionDTO)
+}
+
+function toWeekCategorySelectionDTO(r: {
+  id: string
+  weekStart: Date
+  categoryId: string
+  category: { name: string }
+}): WeekCategorySelectionDTO {
+  return {
+    id: r.id,
+    weekStart: r.weekStart,
+    categoryId: r.categoryId,
+    categoryName: r.category.name,
+  }
+}
+
+/** 指定週にカテゴリを追加（重複は無視） */
+export async function addCategorySelection(weekStart: Date, categoryId: string): Promise<void> {
+  await prisma.weekCategorySelection.upsert({
+    where: { weekStart_categoryId: { weekStart, categoryId } },
+    create: { weekStart, categoryId },
+    update: {},
+  })
+}
+
+/** 指定週からカテゴリを削除 */
+export async function removeCategorySelection(weekStart: Date, categoryId: string): Promise<void> {
+  await prisma.weekCategorySelection.deleteMany({
+    where: { weekStart, categoryId },
+  })
+}
+
+// ─── WeeklyCategoryAdvice ─────────────────────────────────────
+
+/** 指定週のカテゴリ別アドバイス一覧を取得 */
+export async function getWeeklyCategoryAdvices(weekStart: Date): Promise<WeeklyCategoryAdviceDTO[]> {
+  const rows = await prisma.weeklyCategoryAdvice.findMany({
+    where: { weekStart },
+    orderBy: { generatedAt: "asc" },
+  })
+  return rows.map(toCategoryAdviceDTO)
+}
+
+/** 指定カテゴリのアドバイスをGemini グラウンディングで生成・保存 */
+export async function generateWeeklyCategoryAdvice(
+  weekStart: Date,
+  categoryId: string,
+): Promise<WeeklyCategoryAdviceDTO> {
+  const category = await prisma.productCategory.findFirst({
+    where: { id: categoryId, deletedAt: null },
+  })
+  if (!category) throw new Error("カテゴリが見つかりません")
+
+  const weekLabel = formatWeekRange(weekStart)
+  const prevWeekStart = new Date(weekStart)
+  prevWeekStart.setUTCDate(prevWeekStart.getUTCDate() - 7)
+  const prevWeekLabel = formatWeekRange(prevWeekStart)
+  const result = await generateCategoryTrendAdvice(category.name, weekLabel, prevWeekLabel)
+
+  const saved = await prisma.weeklyCategoryAdvice.upsert({
+    where: { weekStart_categoryId: { weekStart, categoryId } },
+    create: {
+      weekStart,
+      categoryId,
+      categoryName: category.name,
+      trend: result.trend,
+      content: result.content,
+      generatedAt: new Date(),
+    },
+    update: {
+      categoryName: category.name,
+      trend: result.trend,
+      content: result.content,
+      generatedAt: new Date(),
+    },
+  })
+
+  return toCategoryAdviceDTO(saved)
+}
+
+function toCategoryAdviceDTO(row: {
+  id: string
+  weekStart: Date
+  categoryId: string
+  categoryName: string
+  trend: string
+  content: string
+  generatedAt: Date
+}): WeeklyCategoryAdviceDTO {
+  const trend = (["up", "down", "stable"] as const).includes(row.trend as "up" | "down" | "stable")
+    ? (row.trend as "up" | "down" | "stable")
+    : "stable"
+  return {
+    id: row.id,
+    weekStart: row.weekStart,
+    categoryId: row.categoryId,
+    categoryName: row.categoryName,
+    trend,
+    content: row.content,
+    generatedAt: row.generatedAt,
+  }
+}
+
+// ─── WeeklyNewsSummary toDTO ──────────────────────────────────
 
 function toNewsSummaryDTO(row: {
   id: string

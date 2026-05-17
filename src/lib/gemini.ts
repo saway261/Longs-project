@@ -208,6 +208,81 @@ export async function generateFactorAnalysis(
 }
 
 // ============================================================
+// カテゴリ別動向アドバイス（Google Search グラウンディング）
+// ============================================================
+
+export interface CategoryTrendAdviceResult {
+  content: string
+  trend: "up" | "down" | "stable"
+}
+
+export async function generateCategoryTrendAdvice(
+  categoryName: string,
+  weekLabel: string,
+  prevWeekLabel: string,
+): Promise<CategoryTrendAdviceResult> {
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) throw new Error("GEMINI_API_KEY が設定されていません")
+
+  const ai = new GoogleGenAI({ apiKey })
+
+  const prompt =
+    `あなたはアパレル企業の経営アドバイザーです。` +
+    `Google検索を使って、日本市場における「${categoryName}」カテゴリーの動向を調べてください。\n` +
+    `【重要】参照する情報の期間を以下の2週間以内に厳密に限定してください:\n` +
+    `・今週（${weekLabel}）\n` +
+    `・前週（${prevWeekLabel}）\n` +
+    `それ以前の情報は使用しないでください。\n\n` +
+    `アパレル企業の経営判断（仕入れ・販売戦略など）に役立つアドバイスを作成してください。` +
+    `提言や具体的な判断を含めて構いません。` +
+    `また、この2週間の動向をもとにカテゴリーの需要トレンドを "up"（上昇）/ "down"（下降）/ "stable"（安定）で評価してください。\n` +
+    `対象週: ${weekLabel}\n\n` +
+    `必ず次のJSON形式のみで回答してください:\n` +
+    `{"content": "アドバイス本文（200〜400文字）", "trend": "up|down|stable"}`
+
+  console.log("[generateCategoryTrendAdvice] Request:", JSON.stringify({
+    model: FACTOR_TEXT_MODEL,
+    categoryName,
+    weekLabel,
+    grounding: true,
+  }, null, 2))
+
+  const response = await ai.models.generateContent({
+    model: FACTOR_TEXT_MODEL,
+    contents: [{ text: prompt }],
+    config: {
+      tools: [{ googleSearch: {} }],
+    },
+  })
+
+  const parts = response.candidates?.[0]?.content?.parts ?? []
+  const text = (parts.find((p) => p.text)?.text ?? "").trim()
+
+  console.log("[generateCategoryTrendAdvice] Response:", JSON.stringify({
+    categoryName,
+    textLength: text.length,
+    usageMetadata: response.usageMetadata,
+    finishReason: response.candidates?.[0]?.finishReason,
+  }, null, 2))
+
+  const jsonMatch = text.match(/\{[\s\S]*?\}/)
+  if (!jsonMatch) {
+    console.error("[generateCategoryTrendAdvice] JSON parse failed:", text)
+    return { content: "動向の取得に失敗しました。", trend: "stable" }
+  }
+
+  try {
+    const parsed = JSON.parse(jsonMatch[0])
+    const trend = (["up", "down", "stable"] as const).includes(parsed.trend)
+      ? (parsed.trend as "up" | "down" | "stable")
+      : "stable"
+    return { content: String(parsed.content ?? "").slice(0, 400), trend }
+  } catch {
+    return { content: "動向の取得に失敗しました。", trend: "stable" }
+  }
+}
+
+// ============================================================
 // 週次ニュース要約（検索フィルター単位）
 // ============================================================
 

@@ -8,8 +8,6 @@ import {
   TrendingUp,
   Calendar,
   Shirt,
-  Footprints,
-  Briefcase,
   Plus,
   Pencil,
   RefreshCw,
@@ -31,7 +29,7 @@ import { PageHeader } from "@/components/feature/page-header"
 import { WeekPicker } from "@/components/feature/advice/week-picker"
 import { NewsQueryEditDialog } from "@/components/feature/advice/news-query-edit-dialog"
 import { cn } from "@/lib/utils"
-import { getWeekStart, isCurrentWeek } from "@/src/lib/news-week"
+import { getWeekStart, isCurrentWeek, formatWeekRange, getWeekEnd } from "@/src/lib/news-week"
 import {
   fetchLatestNewsAction,
   getNewsViewAction,
@@ -50,190 +48,15 @@ import {
   runWeeklyFactorAnalysisAction,
   getWeeklyNewsSummariesAction,
   generateWeeklyNewsSummariesAction,
+  getCategorySelectionsAction,
+  addCategorySelectionAction,
+  removeCategorySelectionAction,
+  getWeeklyCategoryAdvicesAction,
+  generateWeeklyCategoryAdviceAction,
 } from "@/src/actions/advice-actions"
-import type { FactorQueryConfigDTO, WeeklyFactorAnalysisDTO, WeeklyNewsSummaryDTO, FactorType } from "@/src/actions/advice-actions"
+import type { FactorQueryConfigDTO, WeeklyFactorAnalysisDTO, WeeklyNewsSummaryDTO, FactorType, WeekCategorySelectionDTO, WeeklyCategoryAdviceDTO } from "@/src/actions/advice-actions"
+import type { CategoryDTO } from "@/src/services/settings-service"
 import { Input } from "@/components/ui/input"
-
-// ─── 週次ニュース モックデータ ────────────────────────────────────────────
-
-const weeklyAdvices = [
-  {
-    id: 1,
-    week: "2024年12月第3週",
-    date: "2024/12/16 - 2024/12/22",
-    isLatest: true,
-    summary:
-      "年末商戦に向けて、アウター類の需要が急増しています。特にダウンジャケットとウールコートの在庫確保を推奨します。",
-    categories: [
-      {
-        name: "アウター",
-        icon: Shirt,
-        trend: "up",
-        advice: "寒波到来予報により、ダウンジャケットの需要が前週比150%増加見込み。追加発注を推奨。",
-        confidence: 92,
-      },
-      {
-        name: "シューズ",
-        icon: Footprints,
-        trend: "up",
-        advice: "防寒ブーツの検索トレンドが上昇中。在庫を20%増やすことを推奨。",
-        confidence: 85,
-      },
-      {
-        name: "バッグ",
-        icon: Briefcase,
-        trend: "stable",
-        advice: "年末ギフト需要でレザーバッグが好調。現状維持で問題なし。",
-        confidence: 78,
-      },
-    ],
-    factors: [
-      {
-        type: "weather",
-        icon: CloudSun,
-        title: "気象情報",
-        content: "来週は全国的に気温が平年より5度低い見込み。積雪の可能性あり。",
-        impact: "high",
-      },
-      {
-        type: "global",
-        icon: Globe,
-        title: "国際情勢",
-        content: "中国からの輸入が通常通り。物流に大きな遅延なし。",
-        impact: "low",
-      },
-      {
-        type: "trend",
-        icon: TrendingUp,
-        title: "トレンド分析",
-        content: "SNSで「ミニマルファッション」がトレンド。無地アイテムの需要増加。",
-        impact: "medium",
-      },
-    ],
-    actions: [
-      { text: "ダウンジャケット 50点追加発注", priority: "high", category: "アウター" },
-      { text: "防寒ブーツ 30点追加発注", priority: "high", category: "シューズ" },
-      { text: "ウールコート在庫確認", priority: "medium", category: "アウター" },
-      { text: "春物の入荷準備開始", priority: "low", category: "全般" },
-    ],
-  },
-  {
-    id: 2,
-    week: "2024年12月第2週",
-    date: "2024/12/09 - 2024/12/15",
-    isLatest: false,
-    summary: "冬物セールに向けた準備期間。在庫調整と価格見直しを推奨します。",
-    categories: [
-      {
-        name: "アウター",
-        icon: Shirt,
-        trend: "stable",
-        advice: "冬物コートの売れ行きが安定。セール前の価格維持を推奨。",
-        confidence: 88,
-      },
-      {
-        name: "シューズ",
-        icon: Footprints,
-        trend: "down",
-        advice: "秋物シューズの在庫消化を優先。値引き販売を検討。",
-        confidence: 82,
-      },
-      {
-        name: "バッグ",
-        icon: Briefcase,
-        trend: "up",
-        advice: "クリスマスギフト需要でバッグの売上増加中。",
-        confidence: 75,
-      },
-    ],
-    factors: [
-      {
-        type: "weather",
-        icon: CloudSun,
-        title: "気象情報",
-        content: "週末にかけて気温低下。防寒具の需要増加見込み。",
-        impact: "medium",
-      },
-      {
-        type: "global",
-        icon: Globe,
-        title: "国際情勢",
-        content: "アジア地域の物流が一部遅延。2-3日の遅れを想定。",
-        impact: "medium",
-      },
-      {
-        type: "trend",
-        icon: TrendingUp,
-        title: "トレンド分析",
-        content: "インフルエンサーによるアウター紹介が話題。特定商品の需要急増。",
-        impact: "high",
-      },
-    ],
-    actions: [
-      { text: "秋物シューズ 20%オフセール開始", priority: "high", category: "シューズ" },
-      { text: "クリスマスギフトコーナー設置", priority: "medium", category: "全般" },
-      { text: "防寒小物の店頭配置変更", priority: "low", category: "アクセサリー" },
-    ],
-  },
-  {
-    id: 3,
-    week: "2024年12月第1週",
-    date: "2024/12/02 - 2024/12/08",
-    isLatest: false,
-    summary: "12月商戦スタート。クリスマス需要に向けた品揃え強化を推奨します。",
-    categories: [
-      {
-        name: "アウター",
-        icon: Shirt,
-        trend: "up",
-        advice: "本格的な冬の到来でアウター需要が増加。在庫補充を推奨。",
-        confidence: 90,
-      },
-      {
-        name: "シューズ",
-        icon: Footprints,
-        trend: "stable",
-        advice: "革靴の需要が安定。年末の忘年会シーズンに向けて在庫維持。",
-        confidence: 80,
-      },
-      {
-        name: "バッグ",
-        icon: Briefcase,
-        trend: "up",
-        advice: "ギフト需要の立ち上がり。ラッピング対応の準備を。",
-        confidence: 85,
-      },
-    ],
-    factors: [
-      {
-        type: "weather",
-        icon: CloudSun,
-        title: "気象情報",
-        content: "平年並みの気温。急激な変化なし。",
-        impact: "low",
-      },
-      {
-        type: "global",
-        icon: Globe,
-        title: "国際情勢",
-        content: "物流は安定。年末に向けて発注リードタイムに注意。",
-        impact: "low",
-      },
-      {
-        type: "trend",
-        icon: TrendingUp,
-        title: "トレンド分析",
-        content: "エコファッション、サステナブル商品への関心が高まる。",
-        impact: "medium",
-      },
-    ],
-    actions: [
-      { text: "クリスマスギフト向け商品の陳列", priority: "high", category: "全般" },
-      { text: "年末年始の営業時間確定", priority: "medium", category: "運営" },
-      { text: "春物カタログの確認", priority: "low", category: "全般" },
-    ],
-  },
-]
 
 const inventoryDataInsights = [
   {
@@ -255,14 +78,6 @@ const inventoryDataInsights = [
     impact: "high",
   },
 ]
-
-function getMockIndex(weekStart: Date): number {
-  const currentWeekStart = getWeekStart(new Date())
-  const weekDiff = Math.round(
-    (weekStart.getTime() - currentWeekStart.getTime()) / (7 * 24 * 3600 * 1000),
-  )
-  return ((weekDiff % weeklyAdvices.length) + weeklyAdvices.length) % weeklyAdvices.length
-}
 
 // ─── 影響要因の定義 ────────────────────────────────────────────────────────
 
@@ -339,14 +154,19 @@ interface Props {
   initialNewsSummaries: WeeklyNewsSummaryDTO[]
   /** true のとき、今週でも5件以上ニュースがあれば分析ボタンを表示する */
   flexibleAnalysis?: boolean
+  initialAllCategories: CategoryDTO[]
+  initialCategorySelections: WeekCategorySelectionDTO[]
+  initialCategoryAdvices: WeeklyCategoryAdviceDTO[]
 }
 
-export function AdviceNewsShell({ initialData, initialWeekStart, initialQueries, initialDefaultExcludedSources, initialFactorConfigs, initialFactorAnalyses, initialNewsSummaries, flexibleAnalysis = false }: Props) {
+export function AdviceNewsShell({ initialData, initialWeekStart, initialQueries, initialDefaultExcludedSources, initialFactorConfigs, initialFactorAnalyses, initialNewsSummaries, flexibleAnalysis = false, initialAllCategories, initialCategorySelections, initialCategoryAdvices }: Props) {
   const [weekStart, setWeekStart] = useState<Date>(initialWeekStart)
 
-  // ─── 週次ニュース ─────────────────────────────────────────────────
+  // ─── 週ラベル ─────────────────────────────────────────────────
 
-  const selectedWeek = weeklyAdvices[getMockIndex(weekStart)]
+  const weekLabel = formatWeekRange(weekStart)
+  const weekEndDate = getWeekEnd(weekStart)
+  const weekDateRange = `${weekStart.toLocaleDateString("ja-JP", { month: "numeric", day: "numeric" })} - ${weekEndDate.toLocaleDateString("ja-JP", { month: "numeric", day: "numeric" })}`
 
   // ─── 経営判断ニュース state ───────────────────────────────────────
 
@@ -372,6 +192,16 @@ export function AdviceNewsShell({ initialData, initialWeekStart, initialQueries,
   const [isGeneratingSummaries, startGeneratingSummaries] = useTransition()
   const [summaryError, setSummaryError] = useState<string | null>(null)
   const [articlesExpanded, setArticlesExpanded] = useState<Record<string, boolean>>({})
+
+  // ─── カテゴリ別動向アドバイス state ──────────────────────────
+
+  const [allCategories] = useState<CategoryDTO[]>(initialAllCategories)
+  const [categorySelections, setCategorySelections] = useState<WeekCategorySelectionDTO[]>(initialCategorySelections ?? [])
+  const [categoryAdvices, setCategoryAdvices] = useState<WeeklyCategoryAdviceDTO[]>(initialCategoryAdvices ?? [])
+  const [generatingCategories, setGeneratingCategories] = useState<Set<string>>(new Set())
+  const [categoryError, setCategoryError] = useState<Record<string, string>>({})
+  const [categorySelectOpen, setCategorySelectOpen] = useState(false)
+  const [isUpdatingSelection, startUpdatingSelection] = useTransition()
 
   // ─── デフォルト除外ソース設定 ─────────────────────────────────────
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -411,7 +241,7 @@ export function AdviceNewsShell({ initialData, initialWeekStart, initialQueries,
     })
   }, [])
 
-  // weekStart 変化時に関連ニュースと factor 分析結果・サマリーを再取得
+  // weekStart 変化時に関連ニュースと factor 分析結果・サマリー・カテゴリを再取得
   const prevWeekStart = useRef<number | null>(null)
   useEffect(() => {
     const t = weekStart.getTime()
@@ -419,12 +249,16 @@ export function AdviceNewsShell({ initialData, initialWeekStart, initialQueries,
       loadNewsView(weekStart)
       setArticlesExpanded({})
       startRunningAnalysis(async () => {
-        const [factorRes, summaryRes] = await Promise.all([
+        const [factorRes, summaryRes, selRes, advRes] = await Promise.all([
           getWeeklyFactorAnalysesAction(weekStart.toISOString()),
           getWeeklyNewsSummariesAction(weekStart.toISOString()),
+          getCategorySelectionsAction(weekStart.toISOString()),
+          getWeeklyCategoryAdvicesAction(weekStart.toISOString()),
         ])
         if (factorRes.success) setFactorAnalyses(factorRes.data)
         if (summaryRes.success) setNewsSummaries(summaryRes.data)
+        if (selRes.success) setCategorySelections(selRes.data)
+        if (advRes.success) setCategoryAdvices(advRes.data)
       })
     }
     prevWeekStart.current = t
@@ -548,6 +382,51 @@ export function AdviceNewsShell({ initialData, initialWeekStart, initialQueries,
     })
   }
 
+  // ─── カテゴリ選択ハンドラー ───────────────────────────────────
+
+  function handleToggleCategorySelection(categoryId: string, checked: boolean) {
+    const iso = weekStart.toISOString()
+    startUpdatingSelection(async () => {
+      if (checked) {
+        const res = await addCategorySelectionAction(iso, categoryId)
+        if (res.success) {
+          const selRes = await getCategorySelectionsAction(iso)
+          if (selRes.success) setCategorySelections(selRes.data)
+        }
+      } else {
+        const res = await removeCategorySelectionAction(iso, categoryId)
+        if (res.success) {
+          setCategorySelections((prev) => prev.filter((s) => s.categoryId !== categoryId))
+          setCategoryAdvices((prev) => prev.filter((a) => a.categoryId !== categoryId))
+        }
+      }
+    })
+  }
+
+  async function handleGenerateCategoryAdvice(categoryId: string) {
+    setGeneratingCategories((prev) => new Set(prev).add(categoryId))
+    setCategoryError((prev) => ({ ...prev, [categoryId]: "" }))
+    const res = await generateWeeklyCategoryAdviceAction(weekStart.toISOString(), categoryId)
+    if (res.success) {
+      setCategoryAdvices((prev) => {
+        const idx = prev.findIndex((a) => a.categoryId === categoryId)
+        if (idx >= 0) {
+          const next = [...prev]
+          next[idx] = res.data
+          return next
+        }
+        return [...prev, res.data]
+      })
+    } else {
+      setCategoryError((prev) => ({ ...prev, [categoryId]: res.error }))
+    }
+    setGeneratingCategories((prev) => {
+      const next = new Set(prev)
+      next.delete(categoryId)
+      return next
+    })
+  }
+
   function handleGenerateSummaries() {
     setSummaryError(null)
     startGeneratingSummaries(async () => {
@@ -598,54 +477,146 @@ export function AdviceNewsShell({ initialData, initialWeekStart, initialQueries,
               </div>
               <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <h3 className="text-lg font-bold">{selectedWeek.week}</h3>
-                  {selectedWeek.isLatest && (
-                    <Badge className="bg-white/20 text-white hover:bg-white/30">最新</Badge>
+                  <h3 className="text-lg font-bold">{weekLabel}</h3>
+                  {isCurrentWeek(weekStart) && (
+                    <Badge className="bg-white/20 text-white hover:bg-white/30">今週</Badge>
                   )}
                 </div>
-                <p className="text-sm text-white/70 mb-2">{selectedWeek.date}</p>
-                <p className="text-white/90">{selectedWeek.summary}</p>
+                <p className="text-sm text-white/70">{weekDateRange}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          {selectedWeek.categories.map((cat, index) => {
-            const Icon = cat.icon
-            return (
-              <Card key={index}>
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 flex items-center justify-center">
-                        <Icon className="w-5 h-5 text-primary" />
+        {/* ── カテゴリ別動向 ── */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-medium text-muted-foreground">カテゴリ別動向</h3>
+            <Popover open={categorySelectOpen} onOpenChange={setCategorySelectOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" disabled={isUpdatingSelection}>
+                  <Plus className="w-3.5 h-3.5 mr-1.5" />
+                  カテゴリを管理
+                  <ChevronDown className="w-3.5 h-3.5 ml-1.5 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64 p-2" align="end">
+                {allCategories.length === 0 ? (
+                  <p className="text-sm text-muted-foreground px-2 py-1">
+                    カテゴリが登録されていません
+                  </p>
+                ) : (
+                  <div className="space-y-1">
+                    {allCategories.map((cat) => {
+                      const selected = categorySelections.some((s) => s.categoryId === cat.id)
+                      return (
+                        <label
+                          key={cat.id}
+                          className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted cursor-pointer"
+                        >
+                          <Checkbox
+                            checked={selected}
+                            onCheckedChange={(checked: boolean | "indeterminate") =>
+                              handleToggleCategorySelection(cat.id, checked === true)
+                            }
+                          />
+                          <span className="text-sm leading-none">{cat.name}</span>
+                        </label>
+                      )
+                    })}
+                  </div>
+                )}
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {categorySelections.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-muted-foreground/30 bg-muted/10 p-6 text-center text-sm text-muted-foreground">
+              「カテゴリを管理」からカテゴリを選択してください。
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {categorySelections.map((sel) => {
+                const advice = categoryAdvices.find((a) => a.categoryId === sel.categoryId)
+                const isGenerating = generatingCategories.has(sel.categoryId)
+                const error = categoryError[sel.categoryId]
+
+                return (
+                  <Card key={sel.categoryId}>
+                    <CardContent className="pt-5">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <Shirt className="w-4 h-4 text-primary" />
+                          <span className="font-bold text-sm">{sel.categoryName}</span>
+                        </div>
+                        {advice && (
+                          <Badge
+                            className={cn(
+                              "text-[11px]",
+                              advice.trend === "up"
+                                ? "bg-green-100 text-green-700"
+                                : advice.trend === "down"
+                                  ? "bg-red-100 text-red-700"
+                                  : "bg-gray-100 text-gray-700",
+                            )}
+                          >
+                            {advice.trend === "up" ? "↑ 上昇" : advice.trend === "down" ? "↓ 下降" : "→ 安定"}
+                          </Badge>
+                        )}
                       </div>
-                      <span className="font-bold">{cat.name}</span>
-                    </div>
-                    <Badge
-                      className={cn(
-                        cat.trend === "up"
-                          ? "bg-green-100 text-green-700"
-                          : cat.trend === "down"
-                            ? "bg-red-100 text-red-700"
-                            : "bg-gray-100 text-gray-700",
+
+                      {isGenerating ? (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          グラウンディング中...
+                        </div>
+                      ) : advice ? (
+                        <>
+                          <p className="text-sm text-muted-foreground leading-relaxed mb-3">{advice.content}</p>
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[11px] text-muted-foreground">
+                              {new Date(advice.generatedAt).toLocaleString("ja-JP", {
+                                timeZone: "Asia/Tokyo",
+                                month: "numeric",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}生成
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 text-xs text-muted-foreground hover:text-foreground"
+                              onClick={() => handleGenerateCategoryAdvice(sel.categoryId)}
+                            >
+                              <RefreshCw className="w-3 h-3 mr-1" />
+                              再生成
+                            </Button>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="space-y-2">
+                          <p className="text-sm text-muted-foreground">
+                            Gemini がグラウンディングで最新情報を収集します。
+                          </p>
+                          {error && <p className="text-xs text-destructive">{error}</p>}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="w-full"
+                            onClick={() => handleGenerateCategoryAdvice(sel.categoryId)}
+                          >
+                            <Bot className="w-3.5 h-3.5 mr-1.5" />
+                            動向を分析
+                          </Button>
+                        </div>
                       )}
-                    >
-                      {cat.trend === "up" ? "↑ 上昇" : cat.trend === "down" ? "↓ 下降" : "→ 安定"}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-3">{cat.advice}</p>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                      <div className="h-full bg-primary rounded-full" style={{ width: `${cat.confidence}%` }} />
-                    </div>
-                    <span className="text-xs text-muted-foreground">信頼度 {cat.confidence}%</span>
-                  </div>
-                </CardContent>
-              </Card>
-            )
-          })}
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
+          )}
         </div>
 
         <Card className="mb-6">

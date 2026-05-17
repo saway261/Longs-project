@@ -128,6 +128,8 @@ model ProductCategory {
   deletedAt       DateTime? @map("deleted_at") @db.Timestamptz()
 
   products Product[]
+  weekSelections  WeekCategorySelection[]
+  categoryAdvices WeeklyCategoryAdvice[]
 
   @@map("product_category")
 }
@@ -764,3 +766,32 @@ model WeeklyNewsSummary {
   @@index([weekStart])
   @@map("weekly_news_summary")
 }
+
+model WeekCategorySelection {
+   id         String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+   weekStart  DateTime        @map("week_start") @db.Date
+   categoryId String          @map("category_id") @db.Uuid
+   createdAt  DateTime        @default(now()) @map("created_at") @db.Timestamptz()
+
+   category   ProductCategory @relation(fields: [categoryId], references: [id])
+
+   @@unique([weekStart, categoryId])
+   @@index([weekStart])
+   @@map("week_category_selection")
+ }
+
+ model WeeklyCategoryAdvice {
+   id           String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+   weekStart    DateTime        @map("week_start") @db.Date
+   categoryId   String          @map("category_id") @db.Uuid
+   categoryName String          @map("category_name")
+   trend        String          // "up" | "down" | "stable"
+   content      String
+   generatedAt  DateTime        @default(now()) @map("generated_at") @db.Timestamptz()
+
+   category     ProductCategory @relation(fields: [categoryId], references: [id])
+
+   @@unique([weekStart, categoryId])
+   @@index([weekStart])
+   @@map("weekly_category_advice")
+ }
