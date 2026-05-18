@@ -170,7 +170,7 @@ export function InventoryPlanning() {
       <div className="text-[10px] text-muted-foreground/60 mt-0.5 flex items-center justify-end gap-1">
         <span className="text-gray-400">昨年比 {formatDiffPercent(yoy)}</span>
         <span className="mx-1 text-gray-300">|</span>
-        <span className="text-[#345fe1]">予算比 {formatDiffPercent(budgetRatio)}</span>
+        <span className="text-primary">予算比 {formatDiffPercent(budgetRatio)}</span>
       </div>
     )
   }
@@ -265,8 +265,8 @@ export function InventoryPlanning() {
           <div className="flex-1 overflow-auto rounded-lg border">
             <table className="min-w-full text-sm">
               <thead>
-                <tr className="bg-[#345fe1] text-white">
-                  <th className="text-left py-3 px-4 sticky left-0 z-30 bg-[#345fe1] min-w-40 border-r border-white/20">
+                <tr className="bg-primary text-white">
+                  <th className="text-left py-3 px-4 sticky left-0 z-30 bg-primary min-w-40 border-r border-white/20">
                     項目
                   </th>
                   {bulkMonths.map((month) => (
@@ -313,7 +313,7 @@ export function InventoryPlanning() {
           </div>
           <div className="flex justify-end pt-3">
             <Button
-              className="bg-[#345fe1] hover:bg-[#2a4bb3] text-white"
+              className="bg-primary hover:bg-primary/80 text-white"
               disabled={isSaving || selectedYear === null}
               onClick={async () => {
                 if (selectedYear === null || !planDraft[selectedYear]) return
@@ -340,7 +340,7 @@ export function InventoryPlanning() {
       </Dialog>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <Card className="bg-[#345fe1] text-white">
+        <Card className="bg-primary text-white">
           <CardContent className="pt-4 pb-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 flex items-center justify-center">
@@ -358,7 +358,7 @@ export function InventoryPlanning() {
           <CardContent className="pt-4 pb-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-[#345fe1]" />
+                <TrendingUp className="w-5 h-5 text-primary" />
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">年間出荷金額</p>
@@ -372,7 +372,7 @@ export function InventoryPlanning() {
           <CardContent className="pt-4 pb-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 flex items-center justify-center">
-                <Package className="w-5 h-5 text-[#345fe1]" />
+                <Package className="w-5 h-5 text-primary" />
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">平均在庫金額</p>
@@ -387,9 +387,9 @@ export function InventoryPlanning() {
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 flex items-center justify-center">
                 {totalPlanDiff >= 0 ? (
-                  <TrendingUp className="w-5 h-5 text-[#345fe1]" />
+                  <TrendingUp className="w-5 h-5 text-primary" />
                 ) : (
-                  <TrendingDown className="w-5 h-5 text-[#345fe1]" />
+                  <TrendingDown className="w-5 h-5 text-primary" />
                 )}
               </div>
               <div>
@@ -454,7 +454,7 @@ export function InventoryPlanning() {
                 variant={showComparison ? "default" : "outline"}
                 size="sm"
                 onClick={() => setShowComparison(!showComparison)}
-                className={cn(showComparison ? "bg-[#345fe1] hover:bg-[#2a4bb3] text-white" : "bg-transparent")}
+                className={cn(showComparison ? "bg-primary hover:bg-primary/80 text-white" : "bg-transparent")}
               >
                 {showComparison ? "比較表示 ON" : "比較表示 OFF"}
               </Button>
@@ -463,11 +463,11 @@ export function InventoryPlanning() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-xs text-muted-foreground">年度の切り替え・計画登録・ダウンロードをまとめて操作</p>
             <div className="flex flex-wrap gap-2">
-              <Button variant="outline" className="bg-transparent text-[#345fe1] border-[#345fe1]" onClick={handleDownload} disabled={data.length === 0}>
+              <Button variant="outline" className="bg-transparent text-primary border-primary" onClick={handleDownload} disabled={data.length === 0}>
                 <Download className="w-4 h-4 mr-2" />
                 ダウンロード
               </Button>
-              <Button className="bg-[#345fe1] hover:bg-[#2a4bb3] text-white" onClick={() => setIsBulkPlanOpen(true)}>
+              <Button className="bg-primary hover:bg-primary/80 text-white" onClick={() => setIsBulkPlanOpen(true)}>
                 計画登録/修正
               </Button>
             </div>
@@ -480,8 +480,8 @@ export function InventoryPlanning() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-[#345fe1]">
-                    <th className="text-left py-4 px-4 text-white font-semibold sticky left-0 z-30 bg-[#345fe1] min-w-40 border-r border-white/20 shadow-[2px_0_0_rgba(255,255,255,0.18)]">
+                  <tr className="bg-primary">
+                    <th className="text-left py-4 px-4 text-white font-semibold sticky left-0 z-30 bg-primary min-w-40 border-r border-white/20 shadow-[2px_0_0_rgba(255,255,255,0.18)]">
                       項目
                     </th>
                     {data.map((item) => (
@@ -489,15 +489,15 @@ export function InventoryPlanning() {
                         {item.month}
                       </th>
                     ))}
-                    <th className="text-center py-4 px-4 bg-[#2a4bb3] text-white font-bold min-w-35">合計/平均</th>
+                    <th className="text-center py-4 px-4 bg-primary/80 text-white font-bold min-w-35">合計/平均</th>
                   </tr>
                 </thead>
                 <tbody>
                   {/* Purchase Budget Row */}
-                  <tr className="border-b border-border hover:bg-[#345fe1]/5 transition-colors">
+                  <tr className="border-b border-border hover:bg-primary/5 transition-colors">
                     <td className="py-4 px-4 font-medium bg-white sticky left-0 z-20 border-r border-border shadow-[2px_0_0_rgba(0,0,0,0.04)]">
                       <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-[#345fe1]" />
+                        <div className="w-2 h-2 rounded-full bg-primary" />
                         仕入れ予算
                       </div>
                     </td>
@@ -516,7 +516,7 @@ export function InventoryPlanning() {
                   </tr>
 
                   {/* Shipment Amount Row */}
-                  <tr className="border-b border-border bg-muted/20 hover:bg-[#345fe1]/5 transition-colors">
+                  <tr className="border-b border-border bg-muted/20 hover:bg-primary/5 transition-colors">
                     <td className="py-4 px-4 font-medium bg-white sticky left-0 z-20 border-r border-border shadow-[2px_0_0_rgba(0,0,0,0.04)]">
                       <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full bg-green-500" />
@@ -538,7 +538,7 @@ export function InventoryPlanning() {
                   </tr>
 
                   {/* Shipment Gross Profit Rate Row */}
-                  <tr className="border-b border-border hover:bg-[#345fe1]/5 transition-colors">
+                  <tr className="border-b border-border hover:bg-primary/5 transition-colors">
                     <td className="py-4 px-4 font-medium bg-white sticky left-0 z-20 border-r border-border shadow-[2px_0_0_rgba(0,0,0,0.04)]">
                       <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full bg-purple-500" />
@@ -570,7 +570,7 @@ export function InventoryPlanning() {
                     ))}
                     <td className="py-3 px-4 bg-muted/50 border-l border-border">
                       <div className="text-right">
-                        <span className="px-2 py-1 rounded-full text-xs font-semibold bg-[#345fe1]/10 text-[#345fe1]">
+                        <span className="px-2 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary">
                           {formatPercent(avgGrossProfitRate)}
                         </span>
                         {renderComparisonMeta(avgGrossProfitRate, avgGrossProfitRateLastYear, avgGrossProfitRateBudget)}
@@ -579,7 +579,7 @@ export function InventoryPlanning() {
                   </tr>
 
                   {/* Shipment Cost Row */}
-                  <tr className="border-b border-border bg-muted/20 hover:bg-[#345fe1]/5 transition-colors">
+                  <tr className="border-b border-border bg-muted/20 hover:bg-primary/5 transition-colors">
                     <td className="py-4 px-4 font-medium bg-white sticky left-0 z-20 border-r border-border shadow-[2px_0_0_rgba(0,0,0,0.04)]">
                       <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full bg-orange-500" />
@@ -601,7 +601,7 @@ export function InventoryPlanning() {
                   </tr>
 
                   {/* Waste Row */}
-                  <tr className="border-b border-border hover:bg-[#345fe1]/5 transition-colors">
+                  <tr className="border-b border-border hover:bg-primary/5 transition-colors">
                     <td className="py-4 px-4 font-medium bg-white sticky left-0 z-20 border-r border-border shadow-[2px_0_0_rgba(0,0,0,0.04)]">
                       <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full bg-red-500" />
@@ -625,7 +625,7 @@ export function InventoryPlanning() {
                   </tr>
 
                   {/* Month End Inventory Row */}
-                  <tr className="border-b border-border bg-muted/20 hover:bg-[#345fe1]/5 transition-colors">
+                  <tr className="border-b border-border bg-muted/20 hover:bg-primary/5 transition-colors">
                     <td className="py-4 px-4 font-medium bg-white sticky left-0 z-20 border-r border-border shadow-[2px_0_0_rgba(0,0,0,0.04)]">
                       <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full bg-cyan-500" />
@@ -654,7 +654,7 @@ export function InventoryPlanning() {
                   </tr>
 
                   {/* Inventory Plan Row */}
-                  <tr className="border-b border-border hover:bg-[#345fe1]/5 transition-colors">
+                  <tr className="border-b border-border hover:bg-primary/5 transition-colors">
                     <td className="py-4 px-4 font-medium bg-white sticky left-0 z-20 border-r border-border shadow-[2px_0_0_rgba(0,0,0,0.04)]">
                       <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full bg-indigo-500" />
@@ -670,7 +670,7 @@ export function InventoryPlanning() {
                   </tr>
 
                   {/* Plan Diff Row */}
-                  <tr className="border-b border-border bg-muted/20 hover:bg-[#345fe1]/5 transition-colors">
+                  <tr className="border-b border-border bg-muted/20 hover:bg-primary/5 transition-colors">
                     <td className="py-4 px-4 font-medium bg-white sticky left-0 z-20 border-r border-border shadow-[2px_0_0_rgba(0,0,0,0.04)]">
                       <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full bg-amber-500" />
@@ -708,7 +708,7 @@ export function InventoryPlanning() {
                   </tr>
 
                   {/* Last Year Inventory Row */}
-                  <tr className="hover:bg-[#345fe1]/5 transition-colors">
+                  <tr className="hover:bg-primary/5 transition-colors">
                     <td className="py-4 px-4 font-medium bg-white sticky left-0 z-20 border-r border-border shadow-[2px_0_0_rgba(0,0,0,0.04)]">
                       <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full bg-gray-400" />

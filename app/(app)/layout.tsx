@@ -1,5 +1,8 @@
 import { redirect } from "next/navigation"
+import { headers } from "next/headers"
+import type { UserRole } from "@prisma/client"
 import { getSession } from "@/src/lib/auth"
+import { canAccess } from "@/src/lib/permissions"
 import { AppShell } from "@/components/layout/app-shell"
 import { SessionGuard } from "@/components/providers/session-guard"
 
@@ -14,6 +17,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   if (!session) {
     redirect("/login")
+  }
+
+  // ロールベースのアクセス制御
+  // middleware.ts で付与した x-pathname ヘッダーでアクセスパスを取得
+  const headersList = await headers()
+  const pathname = headersList.get("x-pathname") ?? "/"
+
+  if (!canAccess(session.role as UserRole, pathname)) {
+    redirect("/design/pop")
   }
 
   return (

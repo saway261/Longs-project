@@ -487,17 +487,21 @@ export async function getInventoryAlertData(): Promise<InventoryAlertItem[]> {
 
   const alerts: InventoryAlertItem[] = []
   const dateStr = now.toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })
+  let alertIdx = 0
 
   for (const r of rows) {
     const closingQty = Number(r.closingQty)
     const daysOfStock =
       r.dailySalesQty > 0 ? Math.round(closingQty / r.dailySalesQty) : null
 
+    const sellThrough = sellThroughMap[r.categoryName]
+    const isExpiring = sellThrough != null && daysOfStock !== null && daysOfStock > sellThrough * 1.3
+
     if (daysOfStock !== null && daysOfStock < 14) {
       const severity: "critical" | "warning" = daysOfStock < 7 ? "critical" : "warning"
       const threshold = severity === "critical" ? 7 : 14
       alerts.push({
-        id: `low_${r.productCode}`,
+        id: `low_${r.productCode}_${alertIdx++}`,
         type: "low_stock",
         severity,
         product: r.productName,
@@ -511,36 +515,36 @@ export async function getInventoryAlertData(): Promise<InventoryAlertItem[]> {
             : "来週の需要予測に対して在庫が不足しています。",
         date: dateStr,
       })
-    } else if (daysOfStock !== null && daysOfStock > 90) {
-      const severity: "warning" | "info" = daysOfStock > 180 ? "warning" : "info"
-      alerts.push({
-        id: `over_${r.productCode}`,
-        type: "overstock",
-        severity,
-        product: r.productName,
-        productId: r.productCode,
-        category: r.categoryName,
-        currentStock: closingQty,
-        threshold: 90,
-        message: "在庫過剰です。セール販売を検討してください。",
-        date: dateStr,
-      })
-    }
-
-    const sellThrough = sellThroughMap[r.categoryName]
-    if (sellThrough && daysOfStock !== null && daysOfStock > sellThrough * 1.3) {
-      alerts.push({
-        id: `exp_${r.productCode}`,
-        type: "expiring",
-        severity: "warning",
-        product: r.productName,
-        productId: r.productCode,
-        category: r.categoryName,
-        currentStock: closingQty,
-        threshold: sellThrough,
-        message: "季節商品のため、在庫消化が必要です。",
-        date: dateStr,
-      })
+    } else {
+      if (daysOfStock !== null && daysOfStock > 90) {
+        const severity: "warning" | "info" = daysOfStock > 180 ? "warning" : "info"
+        alerts.push({
+          id: `over_${r.productCode}_${alertIdx++}`,
+          type: "overstock",
+          severity,
+          product: r.productName,
+          productId: r.productCode,
+          category: r.categoryName,
+          currentStock: closingQty,
+          threshold: 90,
+          message: "在庫過剰です。セール販売を検討してください。",
+          date: dateStr,
+        })
+      }
+      if (isExpiring) {
+        alerts.push({
+          id: `exp_${r.productCode}_${alertIdx++}`,
+          type: "expiring",
+          severity: "warning",
+          product: r.productName,
+          productId: r.productCode,
+          category: r.categoryName,
+          currentStock: closingQty,
+          threshold: sellThrough!,
+          message: "季節商品のため、在庫消化が必要です。",
+          date: dateStr,
+        })
+      }
     }
   }
 

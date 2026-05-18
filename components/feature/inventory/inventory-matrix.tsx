@@ -267,7 +267,7 @@ function QuadrantMatrixPage<T extends { name: string; sales: number; grossMargin
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <CardTitle className="text-base flex items-center gap-2">
-                <Icon className="w-4 h-4 text-[#345fe1]" />
+                <Icon className="w-4 h-4 text-primary" />
                 {title}
               </CardTitle>
               <p className="text-sm text-muted-foreground mt-1">{description}</p>
@@ -489,8 +489,8 @@ function QuadrantMatrixPage<T extends { name: string; sales: number; grossMargin
                     size="sm"
                     className={cn(
                       selectedQuadrantKey === quadrant.key
-                        ? "bg-[#345fe1] text-white hover:bg-[#2a4bb3]"
-                        : "bg-transparent hover:border-[#345fe1]/50",
+                        ? "bg-primary text-white hover:bg-primary/80"
+                        : "bg-transparent hover:border-primary/50",
                     )}
                     onClick={() => {
                       setSelectedQuadrantKey(quadrant.key)
@@ -509,7 +509,7 @@ function QuadrantMatrixPage<T extends { name: string; sales: number; grossMargin
               <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                 <div>
                   <p className="text-sm font-semibold text-foreground flex items-center gap-2">
-                    <Target className="w-4 h-4 text-[#345fe1]" />
+                    <Target className="w-4 h-4 text-primary" />
                     {listTitle}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
@@ -617,7 +617,7 @@ export function CustomerQuadrant() {
       title="得意先4象限マトリクス"
       description="売上額と粗利率の2軸で得意先企業を配置し、重点フォロー先と条件見直し先を切り分けます。"
       icon={Building2}
-      headerGradientClassName="bg-linear-to-r from-[#345fe1]/6 via-white to-emerald-50"
+      headerGradientClassName="bg-transparent from-primary/6 via-white to-emerald-50"
       matrix={matrix}
       selectedQuadrantKey={selectedQuadrantKey}
       setSelectedQuadrantKey={setSelectedQuadrantKey}
@@ -687,7 +687,7 @@ export function ProductQuadrant() {
       title="商品4象限マトリクス"
       description="売上額と粗利率の2軸で商品を配置し、主力SKUと見直し対象SKUを切り分けます。"
       icon={Shirt}
-      headerGradientClassName="bg-linear-to-r from-[#345fe1]/6 via-white to-sky-50"
+      headerGradientClassName="bg-transparent from-primary/6 via-white to-sky-50"
       matrix={matrix}
       selectedQuadrantKey={selectedQuadrantKey}
       setSelectedQuadrantKey={setSelectedQuadrantKey}

@@ -61,9 +61,76 @@ enum DesignType {
 
 enum UserRole {
   admin
+  manager
   general
 
   @@map("user_role")
+}
+
+enum NewsImpact {
+    high
+    medium
+    low
+    @@map("news_impact")
+  }
+
+enum FactorType {
+  weather
+  global
+  trend
+  @@map("factor_type")
+}
+
+enum ActionType {
+  procurement      // 発注・仕入
+  sales_promotion  // 販促・値引
+  inventory        // 在庫調整・廃棄
+  finance          // 資金・支払
+  category         // カテゴリ戦略
+  @@map("action_type")
+}
+
+enum ActionPriority {
+  high
+  medium
+  low
+  @@map("action_priority")
+}
+
+enum ActionStatus {
+  pending    // 未対応
+  accepted   // 採用
+  dismissed  // 却下
+  @@map("action_status")
+}
+
+enum SourceTable {
+  sales_fact
+  payables_fact
+  receivables_fact
+  gross_profit_fact
+  inventory_snapshot_fact
+  weekly_factor_analysis
+  weekly_news_summary
+  weekly_category_advice
+  inventory_plan_month
+  procurement_item
+  @@map("source_table")
+}
+
+enum ReportLens {
+  balanced
+  cashflow
+  inventory
+  sales
+  @@map("report_lens")
+}
+
+enum ReportStatus {
+  generating
+  done
+  error
+  @@map("report_status")
 }
 
 // ============================================================
@@ -79,10 +146,12 @@ model UserAccount {
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
 
-  procurementLists ProcurementList[]
-  designAssets     DesignAsset[]
-  sessions         Session[]
-  dataImports      DataImport[]
+  procurementLists    ProcurementList[]
+  designAssets        DesignAsset[]
+  sessions            Session[]
+  dataImports         DataImport[]
+  actionRecommendations ActionRecommendation[]
+  managementReports ManagementReport[]
 
   @@map("user_account")
 }
@@ -112,7 +181,10 @@ model ProductCategory {
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz()
   deletedAt       DateTime? @map("deleted_at") @db.Timestamptz()
 
-  products Product[]
+  products              Product[]
+  weekSelections        WeekCategorySelection[]
+  categoryAdvices       WeeklyCategoryAdvice[]
+  actionRecommendations ActionRecommendation[]
 
   @@map("product_category")
 }
@@ -645,4 +717,227 @@ model AiInsight {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
 
   @@map("ai_insight")
+}
+
+
+// ============================================================
+// ニュース
+// ============================================================
+
+model NewsQuery {
+    id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+    queryGroupId  String    @map("query_group_id") @db.Uuid          // 同一クエリの全世代で共有する安定キー（新規作成時は id と同値）
+    name          String                                              // 表示名: "為替", "原材料" など
+    keywords      String?                                            // カンマ区切りのメインキーワード
+    keywordMode   String?   @default("AND") @map("keyword_mode")    // "AND" | "OR"
+    notKeywords   String?   @map("not_keywords")                    // カンマ区切りのNOTキーワード
+    searchField   String?   @default("qInMeta") @map("search_field")  // "q" | "qInTitle" | "qInMeta"
+    language      String?   @default("ja")                          // language/ lang
+    sources       String?                                            // カンマ区切りのソースID or ドメイン
+    sourceMode    String?   @map("source_mode")                      // "include" | "exclude" | null
+    domains       String?
+    categoryMode  String?   @map("category_mode")                    // "include" | "exclude" | null
+    categories    String?                                            // カンマ区切りカテゴリ: "business,technology"
+    sortBy        String?   @default("publishedAt")                  // publishedAt / relevancy 等
+    isActive      Boolean   @default(true) @map("is_active")
+    extraParams   Json?     @map("extra_params")                     // API固有の追加パラメータ
+    createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+    deactivatedAt DateTime? @map("deactivated_at") @db.Timestamptz()
+
+    news                   BusinessNews[]
+    weeklyFactorAnalyses   WeeklyFactorAnalysis[]
+    weeklyNewsSummaries    WeeklyNewsSummary[]
+
+    @@index([queryGroupId])
+    @@map("news_query")
+}
+
+model BusinessNews {
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid        
+  queryId      String     @map("query_id") @db.Uuid     //どのクエリで取得したか                                     
+  externalId   String?    @unique @map("external_id")
+  title        String                                      
+  summary      String?
+  sourceName   String?    @map("source_name")
+  sourceUrl    String?    @map("source_url")               
+  impact       NewsImpact?
+  publishedAt  DateTime   @map("published_at") @db.Timestamptz()
+  fetchedAt    DateTime   @default(now()) @map("fetched_at") @db.Timestamptz()
+  weekStart    DateTime   @map("week_start") @db.Date
+  embedding    Unsupported("vector(768)")?                
+  deletedAt    DateTime?  @map("deleted_at") @db.Timestamptz()                                          
+                
+  query NewsQuery @relation(fields: [queryId], references: [id])           
+
+  @@index([queryId, publishedAt(sort: Desc)])              
+  @@index([weekStart, queryId])
+  @@map("business_news")                                   
+}               
+
+// ============================================================
+// 経営AIアドバイス
+// ============================================================
+
+model FactorQueryConfig {
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  factorType   FactorType @map("factor_type")
+  queryGroupId String     @map("query_group_id") @db.Uuid 
+  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz()
+
+  @@unique([factorType, queryGroupId])  // 同タイプ×同グループの重複を防ぐ
+  @@index([factorType])
+  @@map("factor_query_config")
+}
+
+model WeeklyFactorAnalysis {
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  weekStart    DateTime   @map("week_start") @db.Date
+  factorType   FactorType @map("factor_type")
+  queryId      String     @map("query_id") @db.Uuid  // 分析時点で使われた具体的クエリ
+  content      String     // LLM 出力テキスト（~100文字）
+  impact       NewsImpact // "high" | "medium" | "low"
+  generatedAt  DateTime   @default(now()) @map("generated_at") @db.Timestamptz()
+
+  query NewsQuery @relation(fields: [queryId], references: [id])
+
+  @@unique([weekStart, factorType])
+  @@index([weekStart])
+  @@map("weekly_factor_analysis")
+}
+
+model WeeklyNewsSummary {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  weekStart    DateTime @map("week_start") @db.Date
+  queryGroupId String   @map("query_group_id") @db.Uuid
+  queryId      String   @map("query_id") @db.Uuid
+  queryName    String   @map("query_name")
+  content      String
+  articleCount Int      @map("article_count")
+  generatedAt  DateTime @default(now()) @map("generated_at") @db.Timestamptz()
+
+  query NewsQuery @relation(fields: [queryId], references: [id])
+
+  @@unique([weekStart, queryGroupId])
+  @@index([weekStart])
+  @@map("weekly_news_summary")
+}
+
+model WeekCategorySelection {
+   id         String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+   weekStart  DateTime        @map("week_start") @db.Date
+   categoryId String          @map("category_id") @db.Uuid
+   createdAt  DateTime        @default(now()) @map("created_at") @db.Timestamptz()
+
+   category   ProductCategory @relation(fields: [categoryId], references: [id])
+
+   @@unique([weekStart, categoryId])
+   @@index([weekStart])
+   @@map("week_category_selection")
+ }
+
+model ManagementReport {
+  id                String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  // 入力条件
+  lensId            ReportLens   @map("lens_id")
+  sourceIds         String[]     @map("source_ids")
+  customInstruction String?      @map("custom_instruction")
+  periodRanges      Json?        @map("period_ranges")
+
+  // AI生成結果
+  executiveSummary  String?      @map("executive_summary")
+  decisions         Json?        // ReportDecision[]
+  actions           Json?        // string[]
+  riskNotes         Json?        @map("risk_notes")        // string[]
+  sourceSnapshot    Json?        @map("source_snapshot")   // ReportSourceSnapshot[]
+
+  // メタ情報
+  status            ReportStatus @default(generating)
+  aiModel           String?      @map("ai_model")
+  promptTokens      Int?         @map("prompt_tokens")
+  totalTokens       Int?         @map("total_tokens")
+  generatedAt       DateTime?    @map("generated_at") @db.Timestamptz()
+  createdBy         String?      @map("created_by") @db.Uuid
+  createdAt         DateTime     @default(now()) @map("created_at") @db.Timestamptz()
+  deletedAt         DateTime?    @map("deleted_at") @db.Timestamptz()
+
+  creator UserAccount? @relation(fields: [createdBy], references: [id])
+
+  @@index([createdBy, createdAt(sort: Desc)])
+  @@map("management_report")
+}
+
+ model WeeklyCategoryAdvice {
+   id           String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+   weekStart    DateTime        @map("week_start") @db.Date
+   categoryId   String          @map("category_id") @db.Uuid
+   categoryName String          @map("category_name")
+   trend        String          // "up" | "down" | "stable"
+   content      String
+   generatedAt  DateTime        @default(now()) @map("generated_at") @db.Timestamptz()
+
+   category     ProductCategory @relation(fields: [categoryId], references: [id])
+
+   @@unique([weekStart, categoryId])
+   @@index([weekStart])
+   @@map("weekly_category_advice")
+ }
+
+// ============================================================
+// 最適アクション候補
+// ============================================================
+
+model ActionRecommendation {
+  id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  weekStart     DateTime       @map("week_start") @db.Date
+  actionType    ActionType     @map("action_type")
+  title         String
+  description   String
+  priority      ActionPriority
+  sortScore     Int            @default(0) @map("sort_score")
+  boostedCount  Int            @default(0) @map("boosted_count")
+  lastBoostedAt DateTime?      @map("last_boosted_at") @db.Timestamptz()
+  status        ActionStatus   @default(pending)
+  categoryId    String?        @map("category_id") @db.Uuid
+  generatedAt   DateTime       @default(now()) @map("generated_at") @db.Timestamptz()
+  updatedAt     DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+  actedAt       DateTime?      @map("acted_at") @db.Timestamptz()
+  actedBy       String?        @map("acted_by") @db.Uuid
+
+  sources  ActionRecommendationSource[]
+  boosts   ActionRecommendationBoost[]
+  category ProductCategory? @relation(fields: [categoryId], references: [id])
+  actor    UserAccount?     @relation(fields: [actedBy], references: [id])
+
+  @@index([weekStart, sortScore(sort: Desc)])
+  @@index([weekStart, status])
+  @@map("action_recommendation")
+}
+
+model ActionRecommendationSource {
+  id               String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  recommendationId String      @map("recommendation_id") @db.Uuid
+  sourceTable      SourceTable @map("source_table")
+  periodFrom       DateTime?   @map("period_from") @db.Date
+  periodTo         DateTime?   @map("period_to") @db.Date
+  evidence         String?
+
+  recommendation ActionRecommendation @relation(fields: [recommendationId], references: [id], onDelete: Cascade)
+
+  @@index([recommendationId])
+  @@map("action_recommendation_source")
+}
+
+model ActionRecommendationBoost {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  recommendationId String   @map("recommendation_id") @db.Uuid
+  delta            Int
+  reason           String?
+  sourceRef        String?  @map("source_ref")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  recommendation ActionRecommendation @relation(fields: [recommendationId], references: [id], onDelete: Cascade)
+
+  @@index([recommendationId])
+  @@map("action_recommendation_boost")
 }

@@ -264,7 +264,7 @@ export function InventoryTable({ embedded = false }: InventoryTableProps) {
                 className={cn(
                   "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
                   p === period
-                    ? "bg-[#345fe1] text-white shadow-sm"
+                    ? "bg-primary text-white shadow-sm"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted",
                 )}
               >
@@ -292,7 +292,7 @@ export function InventoryTable({ embedded = false }: InventoryTableProps) {
                 size="sm"
                 onClick={() => setActiveView(view.key)}
                 className={cn(
-                  view.key === activeView && "bg-[#345fe1] text-white hover:bg-[#2a4bb3] border-transparent",
+                  view.key === activeView && "bg-primary text-white hover:bg-primary/80 border-transparent",
                 )}
               >
                 {view.label}
@@ -392,10 +392,10 @@ export function InventoryTable({ embedded = false }: InventoryTableProps) {
                             <button
                               type="button"
                               onClick={() => toggleCustomer(customer.name)}
-                              className="flex items-center gap-1.5 text-left font-semibold text-foreground hover:text-[#345fe1] transition-colors"
+                              className="flex items-center gap-1.5 text-left font-semibold text-foreground hover:text-primary transition-colors"
                             >
                               {isCustOpen
-                                ? <ChevronDown  className="w-4 h-4 shrink-0 text-[#345fe1]" />
+                                ? <ChevronDown  className="w-4 h-4 shrink-0 text-primary" />
                                 : <ChevronRight className="w-4 h-4 shrink-0 text-muted-foreground" />
                               }
                               {customer.name}
@@ -418,10 +418,10 @@ export function InventoryTable({ embedded = false }: InventoryTableProps) {
                                   <button
                                     type="button"
                                     onClick={() => toggleBrand(customer.name, brand.name)}
-                                    className="flex items-center gap-1.5 text-left text-foreground hover:text-[#345fe1] transition-colors"
+                                    className="flex items-center gap-1.5 text-left text-foreground hover:text-primary transition-colors"
                                   >
                                     {isBrandOpen
-                                      ? <ChevronDown  className="w-3.5 h-3.5 shrink-0 text-[#345fe1]" />
+                                      ? <ChevronDown  className="w-3.5 h-3.5 shrink-0 text-primary" />
                                       : <ChevronRight className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
                                     }
                                     {brand.name}

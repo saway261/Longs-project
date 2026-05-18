@@ -887,6 +887,86 @@ export async function deleteDataRow(params: { dataset: string; id: string }): Pr
   await updateFactRow(dataset, id, { deletedAt: now })
 }
 
+/** 期間フィルタ付きCSV生成（LLMレポート向け） */
+export async function exportDatasetCsvByPeriod(params: {
+  dataset: string
+  fromYm: string  // "YYYY-MM"
+  toYm: string    // "YYYY-MM"
+  maxRows?: number
+}): Promise<string> {
+  const { dataset, fromYm, toYm, maxRows = 5000 } = params
+  const columnDefs = getColumnDefs(dataset)
+  if (columnDefs.length === 0) return ""
+
+  const fromDate = new Date(`${fromYm}-01`)
+  const [toYear, toMonth] = toYm.split("-").map(Number)
+  const toDate = new Date(toYear, toMonth, 1)
+
+  const rows = await queryFactTableByPeriod(dataset, fromDate, toDate, maxRows)
+
+  const headers = columnDefs.map((c) => c.label)
+  const dataRows = rows.map((row) =>
+    columnDefs.map((col) => {
+      const dbVal = (row as Record<string, unknown>)[col.field]
+      return col.fromDb(dbVal)
+    }),
+  )
+  return generateCsv(headers, dataRows)
+}
+
+async function queryFactTableByPeriod(
+  dataset: string,
+  fromDate: Date,
+  toDate: Date,
+  maxRows: number,
+): Promise<Record<string, unknown>[]> {
+  switch (dataset) {
+    case "sales": {
+      const rows = await prisma.salesFact.findMany({
+        where: { deletedAt: null, periodYm: { gte: fromDate, lt: toDate } },
+        orderBy: { periodYm: "desc" },
+        take: maxRows,
+      })
+      return rows as unknown as Record<string, unknown>[]
+    }
+    case "payables": {
+      const rows = await prisma.payablesFact.findMany({
+        where: { deletedAt: null, periodYm: { gte: fromDate, lt: toDate } },
+        orderBy: { periodYm: "desc" },
+        take: maxRows,
+      })
+      return rows as unknown as Record<string, unknown>[]
+    }
+    case "receivables": {
+      const rows = await prisma.receivablesFact.findMany({
+        where: { deletedAt: null, periodYm: { gte: fromDate, lt: toDate } },
+        orderBy: { periodYm: "desc" },
+        take: maxRows,
+      })
+      return rows as unknown as Record<string, unknown>[]
+    }
+    case "gross-profit":
+    case "gross_profit": {
+      const rows = await prisma.grossProfitFact.findMany({
+        where: { deletedAt: null },
+        take: maxRows,
+      })
+      return rows as unknown as Record<string, unknown>[]
+    }
+    case "inventory-snapshot":
+    case "inventory_snapshot": {
+      const rows = await prisma.inventorySnapshotFact.findMany({
+        where: { deletedAt: null, periodYm: { gte: fromDate, lt: toDate } },
+        orderBy: { periodYm: "desc" },
+        take: maxRows,
+      })
+      return rows as unknown as Record<string, unknown>[]
+    }
+    default:
+      return []
+  }
+}
+
 /** 全件CSV生成 */
 export async function exportDatasetCsv(params: { dataset: string; search?: string }): Promise<string> {
   const { dataset, search } = params

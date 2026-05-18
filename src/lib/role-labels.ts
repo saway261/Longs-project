@@ -1,7 +1,8 @@
 import { UserRole } from "@prisma/client"
 
 export const ROLE_LABELS: Record<UserRole, string> = {
-  admin: "管理者",
+  admin: "システム管理者",
+  manager: "マネージャー",
   general: "一般",
 }
 

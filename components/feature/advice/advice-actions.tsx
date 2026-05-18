@@ -1,112 +1,159 @@
 "use client"
 
-import {
-  RefreshCw,
-  Sparkles,
-} from "lucide-react"
+import { useState, useTransition } from "react"
+import { Sparkles, CheckCircle2, XCircle } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { PageHeader } from "@/components/feature/page-header"
+import { updateActionStatusAction } from "@/src/actions/advice-actions"
+import type { ActionRecommendationDTO } from "@/src/actions/advice-actions"
 
-const actionCandidates = [
-  {
-    title: "為替ヘッジと発注分散で原価上振れを抑制",
-    category: "為替",
-    impact: "high",
-    horizon: "即時",
-    summary: "円安局面の発注を複数回に分割し、為替予約の比率を引き上げる。",
-  },
-  {
-    title: "素材比率の再設計と価格改定シミュレーション",
-    category: "原材料",
-    impact: "high",
-    horizon: "今月",
-    summary: "ウール/ポリエステル比率の見直しと、粗利確保ラインでの価格帯調整。",
-  },
-  {
-    title: "輸入リードタイム延長を織り込んだ前倒し発注",
-    category: "貿易・物流",
-    impact: "medium",
-    horizon: "今月",
-    summary: "遅延リスクの高いカテゴリを先行手配し、欠品を回避。",
-  },
-  {
-    title: "競合値上げを踏まえた価格レンジ再設計",
-    category: "同業他社",
-    impact: "medium",
-    horizon: "次月",
-    summary: "同価格帯の競争優位を確認し、重点商品の値付けを調整。",
-  },
-  {
-    title: "セール前倒しに合わせた在庫圧縮プラン",
-    category: "同業他社",
-    impact: "high",
-    horizon: "今月",
-    summary: "滞留在庫の割引戦略を早期に決定し、キャッシュ回収を優先。",
-  },
-]
+const ACTION_TYPE_LABEL: Record<string, string> = {
+  procurement: "発注・仕入",
+  sales_promotion: "販促・値引",
+  inventory: "在庫調整",
+  finance: "財務・資金",
+  category: "カテゴリ戦略",
+}
 
-export function AIAdviceActionCandidates() {
+interface Props {
+  initialActions: ActionRecommendationDTO[]
+}
+
+export function AIAdviceActionCandidates({ initialActions }: Props) {
+  const [actions, setActions] = useState<ActionRecommendationDTO[]>(initialActions)
+  const [isPending, startTransition] = useTransition()
+  const [actingId, setActingId] = useState<string | null>(null)
+
+  function handleUpdateStatus(id: string, status: "accepted" | "dismissed") {
+    setActingId(id)
+    startTransition(async () => {
+      const res = await updateActionStatusAction(id, status)
+      if (res.success) {
+        setActions((prev) => prev.map((a) => (a.id === id ? res.data : a)))
+      }
+      setActingId(null)
+    })
+  }
+
+  // 週ごとにグルーピング
+  const byWeek = actions.reduce<Record<string, ActionRecommendationDTO[]>>((acc, a) => {
+    const key = new Date(a.weekStart).toISOString().slice(0, 10)
+    if (!acc[key]) acc[key] = []
+    acc[key].push(a)
+    return acc
+  }, {})
+  const weekKeys = Object.keys(byWeek).sort((a, b) => b.localeCompare(a))
+
   return (
     <div className="p-6">
       <PageHeader
         eyebrow="AI Advice"
         title="最適アクション候補"
-        description="直近ニュースを起点に、実行優先度の高い打ち手を整理して意思決定につなげます。"
+        description="週次ニュースページで生成したアクション候補が週ごとに蓄積されます。"
         icon={Sparkles}
       />
 
-      <Card>
-        <CardHeader>
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <CardTitle className="text-base">最適アクション候補（ニュース起点）</CardTitle>
-              <p className="text-xs text-muted-foreground">直近ニュースから導出した重点アクションを5件提示</p>
-            </div>
-            <Button variant="outline" size="sm" className="bg-transparent">
-              <RefreshCw className="w-4 h-4 mr-2" />
-              再分析
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {actionCandidates.map((action, index) => (
-              <div key={`${action.title}-${index}`} className="rounded-xl border border-border/70 p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <Badge variant="outline" className="text-xs">
-                    {action.category}
-                  </Badge>
-                  <Badge
-                    className={cn(
-                      "text-xs",
-                      action.impact === "high"
-                        ? "bg-red-100 text-red-700"
-                        : action.impact === "medium"
-                          ? "bg-yellow-100 text-yellow-700"
-                          : "bg-green-100 text-green-700",
-                    )}
-                  >
-                    重要度: {action.impact === "high" ? "高" : action.impact === "medium" ? "中" : "低"}
-                  </Badge>
-                </div>
-                <div>
-                  <p className="font-semibold text-foreground">{action.title}</p>
-                  <p className="text-sm text-muted-foreground mt-1">{action.summary}</p>
-                </div>
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>対応期限: {action.horizon}</span>
-                  <Button size="sm" className="bg-[#345fe1] hover:bg-[#2a4bb3] text-white">
-                    実行候補
-                  </Button>
+      {actions.length === 0 ? (
+        <Card>
+          <CardContent className="py-16 text-center text-muted-foreground">
+            <Sparkles className="w-8 h-8 mx-auto mb-3 opacity-30" />
+            <p className="text-sm">まだアクション候補がありません。</p>
+            <p className="text-xs mt-1">週次ニュースページの「在庫データ分析からのアドバイス」セクションから生成できます。</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-6">
+          {weekKeys.map((weekKey) => {
+            const weekActions = byWeek[weekKey]
+            const weekDate = new Date(weekKey)
+            const weekEnd = new Date(weekDate)
+            weekEnd.setUTCDate(weekEnd.getUTCDate() + 6)
+            const weekLabel = `${weekDate.toLocaleDateString("ja-JP", { month: "numeric", day: "numeric" })} 〜 ${weekEnd.toLocaleDateString("ja-JP", { month: "numeric", day: "numeric" })} の週`
+
+            return (
+              <div key={weekKey}>
+                <h3 className="text-sm font-medium text-muted-foreground mb-3">{weekLabel}</h3>
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {weekActions.map((action) => (
+                    <div
+                      key={action.id}
+                      className={cn(
+                        "rounded-xl border p-4 space-y-3 transition-opacity",
+                        action.status === "dismissed" && "opacity-40",
+                        action.status === "accepted" && "border-green-300 bg-green-50/50",
+                      )}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <Badge variant="outline" className="text-[11px]">
+                          {ACTION_TYPE_LABEL[action.actionType] ?? action.actionType}
+                        </Badge>
+                        <Badge
+                          className={cn(
+                            "text-[11px]",
+                            action.priority === "high"
+                              ? "bg-red-100 text-red-700"
+                              : action.priority === "medium"
+                                ? "bg-yellow-100 text-yellow-700"
+                                : "bg-green-100 text-green-700",
+                          )}
+                        >
+                          重要度: {action.priority === "high" ? "高" : action.priority === "medium" ? "中" : "低"}
+                        </Badge>
+                      </div>
+
+                      <div>
+                        <p className="font-semibold text-foreground text-sm">{action.title}</p>
+                        <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{action.description}</p>
+                      </div>
+
+                      {action.sources.length > 0 && (
+                        <p className="text-[11px] text-muted-foreground/70 leading-relaxed">
+                          根拠: {action.sources.map((s) => s.evidence).filter(Boolean).join(" / ")}
+                        </p>
+                      )}
+
+                      <div className="flex items-center justify-end pt-1">
+                        {action.status === "pending" && (
+                          <div className="flex gap-1.5">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-6 text-xs text-destructive hover:bg-destructive/10"
+                              disabled={isPending && actingId === action.id}
+                              onClick={() => handleUpdateStatus(action.id, "dismissed")}
+                            >
+                              <XCircle className="w-3 h-3 mr-1" />
+                              却下
+                            </Button>
+                            <Button
+                              size="sm"
+                              className="h-6 text-xs bg-primary hover:bg-primary/80 text-white"
+                              disabled={isPending && actingId === action.id}
+                              onClick={() => handleUpdateStatus(action.id, "accepted")}
+                            >
+                              <CheckCircle2 className="w-3 h-3 mr-1" />
+                              採用
+                            </Button>
+                          </div>
+                        )}
+                        {action.status === "accepted" && (
+                          <Badge className="bg-green-100 text-green-700 text-[11px]">採用済み</Badge>
+                        )}
+                        {action.status === "dismissed" && (
+                          <Badge className="bg-gray-100 text-gray-500 text-[11px]">却下済み</Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

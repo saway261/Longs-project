@@ -140,7 +140,7 @@ export function ProcurementSuggestions() {
                         <td className="px-4 py-3 text-right text-xs text-muted-foreground">-</td>
                         <td className="px-4 py-3 text-center">
                           <Badge className="px-3 py-1 bg-green-100 text-green-700 hover:bg-green-100">
-                            <TrendingUp className="w-3 h-3 mr-1 text-[#345fe1]" />
+                            <TrendingUp className="w-3 h-3 mr-1 text-primary" />
                             高需要
                           </Badge>
                         </td>
@@ -152,8 +152,8 @@ export function ProcurementSuggestions() {
                             disabled={isAdded}
                             className={cn(
                               isAdded
-                                ? "text-[#345fe1] border-[#345fe1] bg-transparent"
-                                : "bg-[#345fe1] hover:bg-[#2a4bb3] text-white",
+                                ? "text-primary border-primary bg-transparent"
+                                : "bg-primary hover:bg-primary/80 text-white",
                             )}
                           >
                             {isAdded ? "追加済み" : "発注に追加"}

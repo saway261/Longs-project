@@ -1,6 +1,7 @@
 "use server"
 
 import * as partnerService from "@/src/services/partner-service"
+import { requireRole } from "@/src/lib/permissions"
 
 export type { SupplierDTO, CustomerDTO } from "@/src/services/partner-service"
 
@@ -11,9 +12,13 @@ export async function getSuppliersAction(): Promise<
   { success: true; data: partnerService.SupplierDTO[] } | { success: false; error: string }
 > {
   try {
+    await requireRole(["admin", "manager"])
     const data = await partnerService.getSuppliers()
     return { success: true, data }
   } catch (e) {
+    if (e instanceof Error && (e.message === "認証が必要です" || e.message === "権限がありません")) {
+      return { success: false, error: e.message }
+    }
     console.error("[getSuppliersAction]", e)
     return { success: false, error: "仕入先の取得に失敗しました" }
   }
@@ -24,12 +29,16 @@ export async function updateSupplierPaymentTermsAction(
   data: { closingDay: number; paymentMonthOffset: number; paymentDay: number },
 ): Promise<{ success: true; data: partnerService.SupplierDTO } | { success: false; error: string }> {
   try {
+    await requireRole(["admin", "manager"])
     if (!VALID_DAY(data.closingDay)) return { success: false, error: "締め日は1〜28または末日(31)で入力してください" }
     if (!VALID_OFFSET(data.paymentMonthOffset)) return { success: false, error: "支払月は当月・翌月・翌々月のいずれかです" }
     if (!VALID_DAY(data.paymentDay)) return { success: false, error: "支払日は1〜28または末日(31)で入力してください" }
     const result = await partnerService.updateSupplierPaymentTerms(businessPartnerId, data)
     return { success: true, data: result }
   } catch (e) {
+    if (e instanceof Error && (e.message === "認証が必要です" || e.message === "権限がありません")) {
+      return { success: false, error: e.message }
+    }
     console.error("[updateSupplierPaymentTermsAction]", e)
     return { success: false, error: "支払条件の保存に失敗しました" }
   }
@@ -39,9 +48,13 @@ export async function getCustomersAction(): Promise<
   { success: true; data: partnerService.CustomerDTO[] } | { success: false; error: string }
 > {
   try {
+    await requireRole(["admin", "manager"])
     const data = await partnerService.getCustomers()
     return { success: true, data }
   } catch (e) {
+    if (e instanceof Error && (e.message === "認証が必要です" || e.message === "権限がありません")) {
+      return { success: false, error: e.message }
+    }
     console.error("[getCustomersAction]", e)
     return { success: false, error: "得意先の取得に失敗しました" }
   }
@@ -52,12 +65,16 @@ export async function updateCustomerCollectionTermsAction(
   data: { closingDay: number; collectionMonthOffset: number; collectionDay: number },
 ): Promise<{ success: true; data: partnerService.CustomerDTO } | { success: false; error: string }> {
   try {
+    await requireRole(["admin", "manager"])
     if (!VALID_DAY(data.closingDay)) return { success: false, error: "締め日は1〜28または末日(31)で入力してください" }
     if (!VALID_OFFSET(data.collectionMonthOffset)) return { success: false, error: "回収月は当月・翌月・翌々月のいずれかです" }
     if (!VALID_DAY(data.collectionDay)) return { success: false, error: "回収日は1〜28または末日(31)で入力してください" }
     const result = await partnerService.updateCustomerCollectionTerms(businessPartnerId, data)
     return { success: true, data: result }
   } catch (e) {
+    if (e instanceof Error && (e.message === "認証が必要です" || e.message === "権限がありません")) {
+      return { success: false, error: e.message }
+    }
     console.error("[updateCustomerCollectionTermsAction]", e)
     return { success: false, error: "回収条件の保存に失敗しました" }
   }

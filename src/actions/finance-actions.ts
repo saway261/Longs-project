@@ -13,6 +13,7 @@ import {
   type PeriodOption,
   type InventoryHubData,
 } from "@/src/services/data-service"
+import { requireRole } from "@/src/lib/permissions"
 
 export type { InventoryHubData } from "@/src/services/data-service"
 
@@ -20,9 +21,13 @@ export async function getInventoryHubDataAction(
   period: PeriodOption,
 ): Promise<{ success: true; data: InventoryHubData } | { success: false; error: string }> {
   try {
+    await requireRole(["admin", "manager"])
     const data = await getInventoryHubData(period)
     return { success: true, data }
   } catch (e) {
+    if (e instanceof Error && (e.message === "認証が必要です" || e.message === "権限がありません")) {
+      return { success: false, error: e.message }
+    }
     console.error("[getInventoryHubDataAction]", e)
     return { success: false, error: "データの取得に失敗しました" }
   }
@@ -48,6 +53,7 @@ export async function getGanttEntriesAction(): Promise<
   { success: true; data: GanttEntryDTO[] } | { success: false; error: string }
 > {
   try {
+    await requireRole(["admin", "manager"])
     const rows = await getGanttEntries()
     return {
       success: true,
@@ -68,6 +74,9 @@ export async function getGanttEntriesAction(): Promise<
       })),
     }
   } catch (e) {
+    if (e instanceof Error && (e.message === "認証が必要です" || e.message === "権限がありません")) {
+      return { success: false, error: e.message }
+    }
     console.error("[getGanttEntriesAction]", e)
     return { success: false, error: "ガントデータの取得に失敗しました" }
   }
@@ -85,9 +94,13 @@ export async function getReservePoliciesAction(): Promise<
   { success: true; data: ReservePolicyDTO[] } | { success: false; error: string }
 > {
   try {
+    await requireRole(["admin", "manager"])
     const rows = await getReservePolicies()
     return { success: true, data: rows }
   } catch (e) {
+    if (e instanceof Error && (e.message === "認証が必要です" || e.message === "権限がありません")) {
+      return { success: false, error: e.message }
+    }
     console.error("[getReservePoliciesAction]", e)
     return { success: false, error: "内部留保ポリシーの取得に失敗しました" }
   }
@@ -98,9 +111,13 @@ export async function updateReservePolicyAction(
   percent: number,
 ): Promise<{ success: true } | { success: false; error: string }> {
   try {
+    await requireRole(["admin", "manager"])
     await updateReservePolicy(id, percent)
     return { success: true }
   } catch (e) {
+    if (e instanceof Error && (e.message === "認証が必要です" || e.message === "権限がありません")) {
+      return { success: false, error: e.message }
+    }
     console.error("[updateReservePolicyAction]", e)
     return { success: false, error: "内部留保ポリシーの更新に失敗しました" }
   }
@@ -110,9 +127,13 @@ export async function updateTotalAssetsYenAction(
   yen: number,
 ): Promise<{ success: true } | { success: false; error: string }> {
   try {
+    await requireRole(["admin", "manager"])
     await updateTotalAssetsYen(yen)
     return { success: true }
   } catch (e) {
+    if (e instanceof Error && (e.message === "認証が必要です" || e.message === "権限がありません")) {
+      return { success: false, error: e.message }
+    }
     console.error("[updateTotalAssetsYenAction]", e)
     return { success: false, error: "総資産の保存に失敗しました" }
   }
@@ -122,9 +143,13 @@ export async function getFinanceOverviewStatsAction(): Promise<
   { success: true; data: FinanceOverviewStats } | { success: false; error: string }
 > {
   try {
+    await requireRole(["admin", "manager"])
     const data = await getFinanceOverviewStats()
     return { success: true, data }
   } catch (e) {
+    if (e instanceof Error && (e.message === "認証が必要です" || e.message === "権限がありません")) {
+      return { success: false, error: e.message }
+    }
     console.error("[getFinanceOverviewStatsAction]", e)
     return { success: false, error: "財務サマリーの取得に失敗しました" }
   }

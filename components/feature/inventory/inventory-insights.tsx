@@ -150,21 +150,21 @@ export function InventoryInsights() {
           <CardHeader className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base flex items-center gap-2">
-                <Package className="w-4 h-4 text-[#345fe1]" />
+                <Package className="w-4 h-4 text-primary" />
                 売上構成
               </CardTitle>
               <div className="flex gap-1">
                 {(["category", "brand"] as const).map((g) => (
                   <Button
                     key={g}
-                    variant="outline"
+                    variant={compositionGroupBy === g ? "default" : "outline"}
                     size="sm"
                     onClick={() => setCompositionGroupBy(g)}
                     className={cn(
                       "h-6 px-2 rounded-full text-xs",
                       compositionGroupBy === g
-                        ? "bg-[#345fe1] text-white border-transparent hover:bg-[#2a4bb3]"
-                        : "bg-white text-muted-foreground",
+                        ? "shadow-md"
+                        : "text-muted-foreground hover:bg-primary/5 hover:border-primary/40 hover:text-primary",
                     )}
                   >
                     {g === "category" ? "カテゴリ別" : "ブランド別"}
@@ -215,7 +215,7 @@ export function InventoryInsights() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
-              <BarChart2 className="w-4 h-4 text-[#345fe1]" />
+              <BarChart2 className="w-4 h-4 text-primary" />
               前年比較
             </CardTitle>
           </CardHeader>
@@ -252,7 +252,7 @@ export function InventoryInsights() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
-              <ShoppingCart className="w-4 h-4 text-[#345fe1]" />
+              <ShoppingCart className="w-4 h-4 text-primary" />
               在庫回転率
             </CardTitle>
           </CardHeader>
@@ -292,14 +292,14 @@ export function InventoryInsights() {
             {forecastCategoryOptions.map((category) => (
               <Button
                 key={category}
-                variant="outline"
+                variant={forecastCategory === category ? "default" : "outline"}
                 size="sm"
                 onClick={() => setForecastCategory(category)}
                 className={cn(
                   "h-7 px-3 rounded-full text-xs",
                   forecastCategory === category
-                    ? "bg-[#345fe1] text-white border-transparent hover:bg-[#2a4bb3]"
-                    : "bg-white text-muted-foreground",
+                    ? "shadow-md"
+                    : "text-muted-foreground hover:bg-primary/5 hover:border-primary/40 hover:text-primary",
                 )}
               >
                 {category}
@@ -368,7 +368,7 @@ export function InventoryInsights() {
       <Card className="mb-6">
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
-            <Package className="w-4 h-4 text-[#345fe1]" />
+            <Package className="w-4 h-4 text-primary" />
             在庫効率分析
           </CardTitle>
           <p className="text-sm text-muted-foreground">
@@ -409,7 +409,7 @@ export function InventoryInsights() {
                         <td className="px-3 py-2 text-xs text-muted-foreground">#{goodStart + index + 1}</td>
                         <td className="px-3 py-2 font-medium text-foreground">{row.brand}</td>
                         <td className="px-3 py-2 text-xs text-muted-foreground">{row.category}</td>
-                        <td className="px-3 py-2 text-right font-semibold text-[#345fe1]">{row.rotation} 回</td>
+                        <td className="px-3 py-2 text-right font-semibold text-primary">{row.rotation} 回</td>
                         <td className="px-3 py-2 text-right text-muted-foreground">{row.quantity} 点</td>
                       </tr>
                     ))}

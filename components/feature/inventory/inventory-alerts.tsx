@@ -1,13 +1,13 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { AlertTriangle, Bell, Package, TrendingDown, Clock } from "lucide-react"
+import { AlertTriangle, Bell, Package, TrendingDown, Clock, RefreshCw } from "lucide-react"
 import { PageHeader } from "@/components/feature/page-header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import { getInventoryAlertAction } from "@/src/actions/insights-actions"
+import { getInventoryAlertAction, revalidateInsightsCache } from "@/src/actions/insights-actions"
 import type { InventoryAlertItem } from "@/src/actions/insights-actions"
 
 const getAlertTypeLabel = (type: InventoryAlertItem["type"]) => {
@@ -42,13 +42,23 @@ export function InventoryAlerts() {
   const [alertData, setAlertData] = useState<InventoryAlertItem[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
+  const fetchAlerts = () => {
+    setLoading(true)
     getInventoryAlertAction()
       .then((res) => {
         if (res.success) setAlertData(res.data)
       })
       .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    fetchAlerts()
   }, [])
+
+  const handleRefresh = async () => {
+    await revalidateInsightsCache()
+    fetchAlerts()
+  }
 
   const alertCounts = useMemo(
     () =>
@@ -84,11 +94,19 @@ export function InventoryAlerts() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-[#345fe1]" />
-            在庫アラート分析
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">在庫不足・過剰・廃品リスクを分類して確認できます。</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-base flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-primary" />
+                在庫アラート分析
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">在庫不足・過剰・廃品リスクを分類して確認できます。</p>
+            </div>
+            <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading} className="gap-1.5">
+              <RefreshCw className={cn("w-3.5 h-3.5", loading && "animate-spin")} />
+              再取得
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-4">
@@ -101,7 +119,7 @@ export function InventoryAlerts() {
                 ] as const).map((item) => (
                   <Button
                     key={item.id}
-                    variant="outline"
+                    variant={alertType === item.id ? "default" : "outline"}
                     size="sm"
                     onClick={() => {
                       setAlertType(item.id)
@@ -110,8 +128,8 @@ export function InventoryAlerts() {
                     className={cn(
                       "h-auto flex flex-col items-start gap-1 px-3 py-2 transition-all",
                       alertType === item.id
-                        ? "bg-[#345fe1] border-[#345fe1] text-white shadow-md"
-                        : "bg-white border-border text-muted-foreground hover:border-[#345fe1]/50 hover:text-[#345fe1]",
+                        ? "shadow-md"
+                        : "text-muted-foreground hover:bg-primary/5 hover:border-primary/40 hover:text-primary",
                     )}
                   >
                     <span className="text-[11px]">{item.label}</span>
@@ -128,7 +146,7 @@ export function InventoryAlerts() {
               <div className="rounded-lg border">
                 <div className="flex items-center justify-between px-3 py-2 border-b border-border">
                   <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                    <span className="text-[#345fe1]">{getAlertIcon(alertType)}</span>
+                    <span className="text-primary">{getAlertIcon(alertType)}</span>
                     <span>在庫アラート: {getAlertTypeLabel(alertType)}</span>
                   </div>
                   <Badge variant="outline" className="bg-muted/40">
@@ -157,7 +175,7 @@ export function InventoryAlerts() {
                               : "border-purple-200",
                         )}
                       >
-                        <div className="mt-0.5 text-[#345fe1]">{getAlertIcon(alert.type)}</div>
+                        <div className="mt-0.5 text-primary">{getAlertIcon(alert.type)}</div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="font-medium text-sm">{alert.product}</span>

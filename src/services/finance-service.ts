@@ -76,7 +76,7 @@ export type GanttEntryRow = {
   id: string
   partner: string
   description: string
-  amountYen: bigint
+  amountYen: number
   flow: "income" | "expense"
   category: string
   cycle: string | null
@@ -141,8 +141,8 @@ export async function getGanttEntries(): Promise<GanttEntryRow[]> {
     const partner = partnerMap.get(group.businessPartnerId)
     if (!partner?.customer) continue
     const { collectionDay, collectionMonthOffset } = partner.customer
-    const amountYen = group._sum.netSalesYen ?? 0n
-    if (amountYen === 0n) continue
+    const amountYen = Number(group._sum.netSalesYen ?? 0)
+    if (amountYen === 0) continue
     rows.push({
       id: `sales-${group.businessPartnerId}-${group.periodYm.toISOString().slice(0, 7)}`,
       partner: partner.name,
@@ -166,8 +166,8 @@ export async function getGanttEntries(): Promise<GanttEntryRow[]> {
     const partner = partnerMap.get(group.businessPartnerId)
     if (!partner?.supplier) continue
     const { paymentDay, paymentMonthOffset } = partner.supplier
-    const amountYen = group._sum.paymentYen ?? 0n
-    if (amountYen === 0n) continue
+    const amountYen = Number(group._sum.paymentYen ?? 0)
+    if (amountYen === 0) continue
     rows.push({
       id: `payables-${group.businessPartnerId}-${group.periodYm.toISOString().slice(0, 7)}`,
       partner: partner.name,
@@ -191,7 +191,7 @@ export async function getGanttEntries(): Promise<GanttEntryRow[]> {
       id: r.id,
       partner: r.description ?? "",
       description: r.description ?? "",
-      amountYen: r.amountYen,
+      amountYen: Number(r.amountYen),
       flow: r.flow as "income" | "expense",
       category: r.category,
       cycle: r.cycle,

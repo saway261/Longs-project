@@ -1,0 +1,43 @@
+export const NEWSDATA_CATEGORIES = [
+  "breaking",
+  "business",
+  "crime",
+  "domestic",
+  "education",
+  "entertainment",
+  "environment",
+  "food",
+  "health",
+  "lifestyle",
+  "politics",
+  "science",
+  "sports",
+  "technology",
+  "top",
+  "tourism",
+  "world",
+  "other",
+] as const
+
+export type NewsdataCategory = (typeof NEWSDATA_CATEGORIES)[number]
+
+export const NEWSDATA_CATEGORY_LABELS: Record<NewsdataCategory, string> = {
+  breaking: "速報",
+  business: "ビジネス",
+  crime: "事件・犯罪",
+  domestic: "国内",
+  education: "教育",
+  entertainment: "エンタメ",
+  environment: "環境",
+  food: "食品",
+  health: "健康",
+  lifestyle: "ライフスタイル",
+  politics: "政治",
+  science: "科学",
+  sports: "スポーツ",
+  technology: "テクノロジー",
+  top: "トップ",
+  tourism: "観光",
+  world: "国際",
+  other: "その他",
+}

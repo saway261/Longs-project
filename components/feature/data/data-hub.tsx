@@ -137,8 +137,8 @@ export function DataHub() {
           description="アップロード済みデータの確認と編集をまとめて行えます。"
           icon={Table}
         />
-        <Button variant="outline" className="text-[#345fe1] border-[#345fe1]" onClick={handleExportCsv}>
-          <Download className="w-4 h-4 mr-2 text-[#345fe1]" />
+        <Button variant="outline" className="text-primary border-primary" onClick={handleExportCsv}>
+          <Download className="w-4 h-4 mr-2 text-primary" />
           CSV出力
         </Button>
       </div>
@@ -159,15 +159,15 @@ export function DataHub() {
                   className={cn(
                     "w-full text-left rounded-xl border px-3 py-2 transition-colors",
                     isActive
-                      ? "border-[#345fe1] bg-[#345fe1]/10 text-[#345fe1]"
-                      : "border-border text-muted-foreground hover:border-[#345fe1]/50",
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border text-muted-foreground hover:border-primary/50",
                   )}
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">{set.name}</span>
                     <Badge
                       variant="outline"
-                      className={cn("text-[10px]", isActive && "border-[#345fe1] text-[#345fe1]")}
+                      className={cn("text-[10px]", isActive && "border-primary text-primary")}
                     >
                       {formatValue(count)}行
                     </Badge>
@@ -183,7 +183,7 @@ export function DataHub() {
           <CardHeader className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2">
             <div>
               <CardTitle className="text-base flex items-center gap-2">
-                <FileText className="w-4 h-4 text-[#345fe1]" />
+                <FileText className="w-4 h-4 text-primary" />
                 {activeDataSet?.name ?? "データ"}
               </CardTitle>
               <p className="text-xs text-muted-foreground">{activeDataSet?.description}</p>
@@ -234,7 +234,7 @@ export function DataHub() {
                 <div className="max-h-[60vh] overflow-auto rounded-lg border">
                   {isLoading ? (
                     <div className="flex items-center justify-center h-40">
-                      <Loader2 className="w-6 h-6 animate-spin text-[#345fe1]" />
+                      <Loader2 className="w-6 h-6 animate-spin text-primary" />
                     </div>
                   ) : rows.length === 0 ? (
                     <div className="flex items-center justify-center h-40 text-sm text-muted-foreground">
@@ -322,7 +322,7 @@ export function DataHub() {
           {editing && (
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <FileText className="w-4 h-4 text-[#345fe1]" />
+                <FileText className="w-4 h-4 text-primary" />
                 <span>{dataSetMap[editing.datasetId]?.name}</span>
               </div>
               <div className="max-h-[60vh] overflow-auto rounded-lg border border-border p-4">
@@ -342,7 +342,7 @@ export function DataHub() {
                 <Button variant="outline" onClick={() => setEditing(null)}>
                   キャンセル
                 </Button>
-                <Button className="bg-[#345fe1] hover:bg-[#2a4bb3] text-white" onClick={saveEdit} disabled={isSaving}>
+                <Button className="bg-primary hover:bg-primary/80 text-white" onClick={saveEdit} disabled={isSaving}>
                   {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                   保存
                 </Button>

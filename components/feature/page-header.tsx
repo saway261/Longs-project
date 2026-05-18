@@ -16,7 +16,7 @@ export function PageHeader({ eyebrow, title, description, icon: Icon }: PageHead
         <p className="text-xs text-muted-foreground uppercase tracking-wide">{eyebrow}</p>
       )}
       <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-        {Icon && <Icon className="w-6 h-6 text-[#345fe1]" />}
+        {Icon && <Icon className="w-6 h-6 text-primary" />}
         {title}
       </h2>
       <p className="text-muted-foreground">{description}</p>

@@ -1,5 +1,5 @@
-import { AIAdviceBusinessNews } from "@/components/feature/advice/advice-news-business"
+import { redirect } from "next/navigation"
 
-export default function AIAdviceBusinessNewsPage() {
-  return <AIAdviceBusinessNews />
+export default function BusinessNewsRedirect() {
+  redirect("/advice/news")
 }

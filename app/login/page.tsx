@@ -49,7 +49,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-[#345fe1]/15 via-white to-white">
+    <div className="min-h-screen bg-linear-to-br from-primary/15 via-white to-white">
       <div className="max-w-6xl mx-auto px-6 py-12 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
         <div className="space-y-6">
           <Badge variant="outline" className="bg-white/70">
@@ -70,7 +70,7 @@ export default function LoginPage() {
                 <Card key={item.title} className="bg-white/70">
                   <CardContent className="p-4 space-y-2">
                     <div className="flex items-center gap-2 text-sm font-semibold">
-                      <Icon className="w-4 h-4 text-[#345fe1]" />
+                      <Icon className="w-4 h-4 text-primary" />
                       {item.title}
                     </div>
                     <p className="text-xs text-muted-foreground">{item.description}</p>
@@ -120,18 +120,18 @@ export default function LoginPage() {
                   <Switch
                     checked={rememberMe}
                     onCheckedChange={(checked: boolean) => setRememberMe(Boolean(checked))}
-                    className="data-[state=checked]:bg-[#345fe1]"
+                    className="data-[state=checked]:bg-primary"
                   />
                   <span className="text-sm text-muted-foreground">次回から自動ログイン</span>
                 </div>
-                <Link href="/settings" className="text-sm text-[#345fe1] hover:underline">
+                <Link href="/settings" className="text-sm text-primary hover:underline">
                   パスワードを忘れた
                 </Link>
               </div>
               <div className="space-y-2">
                 <Button
                   type="submit"
-                  className="w-full gap-2 bg-[#345fe1] hover:bg-[#2a4bb3] text-white"
+                  className="w-full gap-2 bg-primary hover:bg-primary/80 text-white"
                   disabled={isPending}
                 >
                   {isPending ? "ログイン中..." : "ログイン"}
@@ -140,11 +140,11 @@ export default function LoginPage() {
               </div>
               <div className="grid grid-cols-2 gap-3 text-xs text-muted-foreground">
                 <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-[#345fe1]" />
+                  <ShieldCheck className="w-4 h-4 text-primary" />
                   直近の入出金をホームで確認
                 </div>
                 <div className="flex items-center gap-2">
-                  <Lock className="w-4 h-4 text-[#345fe1]" />
+                  <Lock className="w-4 h-4 text-primary" />
                   設定はローカル保存のダミー
                 </div>
               </div>

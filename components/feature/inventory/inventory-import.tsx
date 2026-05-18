@@ -193,7 +193,7 @@ export function InventoryImport() {
     <div className="p-6">
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <Upload className="w-6 h-6 text-[#345fe1]" />
+          <Upload className="w-6 h-6 text-primary" />
           データアップロード
         </h2>
         <p className="text-muted-foreground">CSVファイルから在庫データをアップロード</p>
@@ -209,18 +209,18 @@ export function InventoryImport() {
             className={cn(
               "border-2 border-dashed rounded-xl p-12 text-center transition-colors",
               isDragging
-                ? "border-[#345fe1] bg-[#345fe1]/5"
-                : "border-border hover:border-[#345fe1]/50 hover:bg-muted/50",
+                ? "border-primary bg-primary/5"
+                : "border-border hover:border-primary/50 hover:bg-muted/50",
             )}
           >
-            <div className="w-16 h-16 bg-[#345fe1]/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Upload className="w-8 h-8 text-[#345fe1]" />
+            <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <Upload className="w-8 h-8 text-primary" />
             </div>
             <h3 className="text-lg font-medium mb-2">CSVファイルをドラッグ&ドロップ</h3>
             <p className="text-muted-foreground mb-4">または下のボタンからファイルを選択してください</p>
             <Button
               onClick={handleFileSelect}
-              className="bg-[#345fe1] hover:bg-[#2a4bb3] text-white"
+              className="bg-primary hover:bg-primary/80 text-white"
               disabled={isUploading}
             >
               {isUploading ? "アップロード中..." : "ファイルを選択"}
@@ -295,8 +295,8 @@ export function InventoryImport() {
                 className="flex items-center justify-between p-4 border border-border rounded-xl hover:bg-muted/50 transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-[#345fe1]/10 rounded-lg flex items-center justify-center">
-                    <FileText className="w-5 h-5 text-[#345fe1]" />
+                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                    <FileText className="w-5 h-5 text-primary" />
                   </div>
                   <div>
                     <p className="font-medium text-sm">{template.name}</p>

@@ -287,7 +287,7 @@ export function InventoryCatalog() {
             {productSaveError && <p className="text-xs text-red-500">{productSaveError}</p>}
           </div>
           <Button
-            className="w-full mt-4 bg-[#345fe1] hover:bg-[#2a4bb3] text-white"
+            className="w-full mt-4 bg-primary hover:bg-primary/80 text-white"
             onClick={handleSaveProduct}
             disabled={productSaving}
           >
@@ -334,7 +334,7 @@ export function InventoryCatalog() {
             {variantSaveError && <p className="text-xs text-red-500">{variantSaveError}</p>}
           </div>
           <Button
-            className="w-full mt-4 bg-[#345fe1] hover:bg-[#2a4bb3] text-white"
+            className="w-full mt-4 bg-primary hover:bg-primary/80 text-white"
             onClick={handleSaveVariant}
             disabled={variantSaving}
           >

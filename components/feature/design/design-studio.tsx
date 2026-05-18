@@ -531,8 +531,8 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
                 className={cn(
                   "p-2 rounded-xl border-2 transition-all",
                   selectedStyle === style.id
-                    ? "border-[#345fe1] bg-[#345fe1]/5"
-                    : "border-border hover:border-[#345fe1]/50",
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:border-primary/50",
                 )}
               >
                 <img
@@ -557,7 +557,7 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
                     onClick={() => setSelectedColor((prev) => (prev === color.hex ? "" : color.hex))}
                     className={cn(
                       "w-full aspect-square rounded-lg transition-all hover:scale-105 relative group",
-                      selectedColor === color.hex && "ring-2 ring-[#345fe1] ring-offset-2",
+                      selectedColor === color.hex && "ring-2 ring-primary ring-offset-2",
                     )}
                     style={{ backgroundColor: color.hex }}
                     title={color.name}
@@ -601,7 +601,7 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
                 placeholder="例: 今だけの特別価格！"
                 value={catchphrase}
                 onChange={(e) => setCatchphrase(e.target.value)}
-                className="focus-visible:ring-0 focus-visible:border-[#345fe1]"
+                className="focus-visible:ring-0 focus-visible:border-primary"
               />
             </div>
             <div>
@@ -611,7 +611,7 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
                 placeholder="例: 春の新作コレクション"
                 value={mainText}
                 onChange={(e) => setMainText(e.target.value)}
-                className="focus-visible:ring-0 focus-visible:border-[#345fe1]"
+                className="focus-visible:ring-0 focus-visible:border-primary"
               />
             </div>
           </div>
@@ -634,7 +634,7 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
                       <img
                         src={img.preview}
                         alt={`参照画像 ${index + 1}`}
-                        className="w-full aspect-square object-cover rounded-lg cursor-pointer ring-0 hover:ring-2 hover:ring-[#345fe1] transition-all"
+                        className="w-full aspect-square object-cover rounded-lg cursor-pointer ring-0 hover:ring-2 hover:ring-primary transition-all"
                         onClick={() => insertImageRef(index)}
                         title={`クリックで [image ${index + 1}] を入力欄に挿入`}
                       />
@@ -657,7 +657,7 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
                 onClick={() => fileInputRef.current?.click()}
                 onDrop={handleDrop}
                 onDragOver={handleDragOver}
-                className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-[#345fe1] transition-colors cursor-pointer"
+                className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary transition-colors cursor-pointer"
               >
                 <Upload className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
                 <p className="text-sm text-muted-foreground">ドラッグ＆ドロップ または クリック</p>
@@ -684,8 +684,8 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
                     className={cn(
                       "px-4 py-2 rounded-lg text-sm font-medium transition-colors border",
                       isSelected
-                        ? "border-[#345fe1] bg-[#345fe1] text-white"
-                        : "border-border/70 bg-muted/40 text-muted-foreground hover:border-[#345fe1]/50 hover:bg-muted/60",
+                        ? "border-primary bg-primary text-white"
+                        : "border-border/70 bg-muted/40 text-muted-foreground hover:border-primary/50 hover:bg-muted/60",
                     )}
                   >
                     <span>{customLabel}</span>
@@ -733,7 +733,7 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
               variant="outline"
               size="sm"
               onClick={handleDownload}
-              className="text-[#345fe1] border-[#345fe1] hover:bg-[#345fe1]/10 bg-transparent"
+              className="text-primary border-primary hover:bg-primary/10 bg-transparent"
             >
               <Download className="w-4 h-4 mr-2" />
               ダウンロード
@@ -745,7 +745,7 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
         <div className="flex-1 bg-muted rounded-xl flex items-center justify-center min-h-100 relative overflow-hidden">
           {isGenerating ? (
             <div className="text-center">
-              <div className="w-12 h-12 border-4 border-[#345fe1] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+              <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
               <p className="text-muted-foreground">生成中...</p>
             </div>
           ) : generatedImage ? (
@@ -787,8 +787,8 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
                     className={cn(
                       "flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs transition-colors",
                       isActive
-                        ? "border-[#345fe1] bg-[#345fe1]/10 text-[#345fe1] font-medium"
-                        : "border-border text-muted-foreground hover:border-[#345fe1]/50",
+                        ? "border-primary bg-primary/10 text-primary font-medium"
+                        : "border-border text-muted-foreground hover:border-primary/50",
                     )}
                   >
                     {style.name}
@@ -816,8 +816,8 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
                     className={cn(
                       "flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs transition-colors",
                       isActive
-                        ? "border-[#345fe1] bg-[#345fe1]/10 text-[#345fe1] font-medium"
-                        : "border-border text-muted-foreground hover:border-[#345fe1]/50",
+                        ? "border-primary bg-primary/10 text-primary font-medium"
+                        : "border-border text-muted-foreground hover:border-primary/50",
                     )}
                   >
                     {range.label}
@@ -840,8 +840,8 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
                         className={cn(
                           "flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs transition-colors",
                           isActive
-                            ? "border-[#345fe1] bg-[#345fe1]/10 text-[#345fe1] font-medium"
-                            : "border-border text-muted-foreground hover:border-[#345fe1]/50",
+                            ? "border-primary bg-primary/10 text-primary font-medium"
+                            : "border-border text-muted-foreground hover:border-primary/50",
                         )}
                       >
                         {year}年
@@ -867,8 +867,8 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
                     className={cn(
                       "flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs transition-colors",
                       isActive
-                        ? "border-[#345fe1] bg-[#345fe1]/10 text-[#345fe1] font-medium"
-                        : "border-border text-muted-foreground hover:border-[#345fe1]/50",
+                        ? "border-primary bg-primary/10 text-primary font-medium"
+                        : "border-border text-muted-foreground hover:border-primary/50",
                     )}
                   >
                     {label}
@@ -901,8 +901,8 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
               className={cn(
                 "flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs transition-colors",
                 historySortKey === key
-                  ? "border-[#345fe1] bg-[#345fe1]/10 text-[#345fe1] font-medium"
-                  : "border-border text-muted-foreground hover:border-[#345fe1]/50",
+                  ? "border-primary bg-primary/10 text-primary font-medium"
+                  : "border-border text-muted-foreground hover:border-primary/50",
               )}
             >
               {label}
@@ -950,7 +950,7 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
                     <span
                       className={cn(
                         "text-xs px-2 py-1 rounded-full",
-                        item.type === "pop" ? "bg-[#345fe1]/10 text-[#345fe1]" : "bg-green-100 text-green-700",
+                        item.type === "pop" ? "bg-primary/10 text-primary" : "bg-green-100 text-green-700",
                       )}
                     >
                       {item.type === "pop" ? "POP" : "ポスター"}
@@ -1007,7 +1007,7 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
                     className={cn(
                       "w-8 h-8 p-0 text-xs",
                       historyCurrentPage === page &&
-                        "bg-[#345fe1] hover:bg-[#345fe1]/90 border-[#345fe1]",
+                        "bg-primary hover:bg-primary/90 border-primary",
                     )}
                     onClick={() => setHistoryCurrentPage(page as number)}
                   >
@@ -1122,7 +1122,7 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
                         )}
                         {selectedStyle && (
                           <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border/70 bg-muted/20">
-                            <Sparkles className="w-4 h-4 text-[#345fe1]" />
+                            <Sparkles className="w-4 h-4 text-primary" />
                             <span className="text-sm font-medium text-foreground">
                               {styles.find((s) => s.id === selectedStyle)?.name}
                             </span>
@@ -1147,7 +1147,7 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
                             <img
                               src={img.preview}
                               alt={`参照画像 ${index + 1}`}
-                              className="w-full aspect-square object-cover rounded-lg cursor-pointer ring-0 hover:ring-2 hover:ring-[#345fe1] transition-all"
+                              className="w-full aspect-square object-cover rounded-lg cursor-pointer ring-0 hover:ring-2 hover:ring-primary transition-all"
                               onClick={() => insertImageRef(index)}
                               title={`クリックで [image ${index + 1}] を入力欄に挿入`}
                             />
@@ -1179,10 +1179,10 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
                             className={cn(
                               "flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs transition-colors",
                               isFilled
-                                ? "border-[#345fe1] bg-[#345fe1]/10 text-[#345fe1]"
+                                ? "border-primary bg-primary/10 text-primary"
                                 : isActive
                                   ? "border-border bg-muted/70 text-foreground"
-                                  : "border-border text-muted-foreground hover:border-[#345fe1]/50",
+                                  : "border-border text-muted-foreground hover:border-primary/50",
                             )}
                             title={panel.hint}
                           >
@@ -1214,7 +1214,7 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
             <Button
               onClick={handleGenerate}
               disabled={isGenerating}
-              className="w-full bg-[#345fe1] hover:bg-[#2a4bb3] text-white"
+              className="w-full bg-primary hover:bg-primary/80 text-white"
               size="lg"
             >
               <Sparkles className="w-5 h-5 mr-2" />
@@ -1226,7 +1226,7 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2">
                     <span className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center">
-                      <ActivePanelIcon className="w-4 h-4 text-[#345fe1]" />
+                      <ActivePanelIcon className="w-4 h-4 text-primary" />
                     </span>
                     {activePanel.label}
                   </DialogTitle>
@@ -1257,8 +1257,8 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
                         className={cn(
                           "p-4 rounded-xl border-2 transition-all text-left",
                           selectedType === type.id
-                            ? "border-[#345fe1] bg-[#345fe1]/5"
-                            : "border-border hover:border-[#345fe1]/50",
+                            ? "border-primary bg-primary/5"
+                            : "border-border hover:border-primary/50",
                         )}
                       >
                         <p className="font-semibold text-foreground">{type.name}</p>
@@ -1285,7 +1285,7 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
                         onClick={() => setSelectedColor((prev) => (prev === color.hex ? "" : color.hex))}
                         className={cn(
                           "w-full aspect-square rounded-lg transition-all hover:scale-105 relative group",
-                          selectedColor === color.hex && "ring-2 ring-[#345fe1] ring-offset-2",
+                          selectedColor === color.hex && "ring-2 ring-primary ring-offset-2",
                         )}
                         style={{ backgroundColor: color.hex }}
                         title={color.name}
@@ -1333,7 +1333,7 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
                     placeholder="例: 今だけの特別価格！"
                     value={catchphrase}
                     onChange={(e) => setCatchphrase(e.target.value)}
-                    className="focus-visible:ring-0 focus-visible:border-[#345fe1]"
+                    className="focus-visible:ring-0 focus-visible:border-primary"
                   />
                 </div>
                 <div>
@@ -1343,7 +1343,7 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
                     placeholder="例: 春の新作コレクション"
                     value={mainText}
                     onChange={(e) => setMainText(e.target.value)}
-                    className="focus-visible:ring-0 focus-visible:border-[#345fe1]"
+                    className="focus-visible:ring-0 focus-visible:border-primary"
                   />
                 </div>
               </CardContent>
@@ -1377,7 +1377,7 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
                           <img
                             src={img.preview}
                             alt={`参照画像 ${index + 1}`}
-                            className="w-full aspect-square object-cover rounded-lg cursor-pointer ring-0 hover:ring-2 hover:ring-[#345fe1] transition-all"
+                            className="w-full aspect-square object-cover rounded-lg cursor-pointer ring-0 hover:ring-2 hover:ring-primary transition-all"
                             onClick={() => insertImageRef(index)}
                             title={`クリックで [image ${index + 1}] を入力欄に挿入`}
                           />
@@ -1400,7 +1400,7 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
                     onClick={() => fileInputRef.current?.click()}
                     onDrop={handleDrop}
                     onDragOver={handleDragOver}
-                    className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-[#345fe1] transition-colors cursor-pointer"
+                    className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary transition-colors cursor-pointer"
                   >
                     <Upload className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
                     <p className="text-sm text-muted-foreground">ドラッグ＆ドロップ または クリック</p>
@@ -1426,8 +1426,8 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
                       className={cn(
                         "p-2 rounded-xl border-2 transition-all",
                         selectedStyle === style.id
-                          ? "border-[#345fe1] bg-[#345fe1]/5"
-                          : "border-border hover:border-[#345fe1]/50",
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:border-primary/50",
                       )}
                     >
                       <img
@@ -1456,7 +1456,7 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
                       className={cn(
                         "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
                         selectedRatio === ratio.id
-                          ? "bg-[#345fe1] text-white"
+                          ? "bg-primary text-white"
                           : "bg-muted text-muted-foreground hover:bg-muted/80",
                       )}
                     >
@@ -1505,7 +1505,7 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
                     )}
                     {selectedStyle && (
                       <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border/70 bg-card shadow-sm">
-                        <Sparkles className="w-4 h-4 text-[#345fe1]" />
+                        <Sparkles className="w-4 h-4 text-primary" />
                         <span className="text-sm font-medium text-foreground">
                           {styles.find((s) => s.id === selectedStyle)?.name}
                         </span>
@@ -1519,7 +1519,7 @@ export function DesignStudio({ initialType, showHistory = false }: DesignStudioP
             <Button
               onClick={handleGenerate}
               disabled={isGenerating}
-              className="w-full bg-[#345fe1] hover:bg-[#2a4bb3] text-white"
+              className="w-full bg-primary hover:bg-primary/80 text-white"
               size="lg"
             >
               <Sparkles className="w-5 h-5 mr-2" />

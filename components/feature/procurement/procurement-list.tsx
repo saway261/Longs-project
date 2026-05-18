@@ -88,7 +88,7 @@ export function ProcurementList() {
           variant="outline"
           onClick={handleClear}
           disabled={pendingItems.length === 0 || loading}
-          className="text-[#345fe1] border-[#345fe1]"
+          className="text-primary border-primary"
         >
           すべてクリア
         </Button>
@@ -159,7 +159,7 @@ export function ProcurementList() {
                       </td>
                       <td className="px-4 py-3 text-xs text-muted-foreground">{item.categoryName ?? "-"}</td>
                       <td className="px-4 py-3 text-right font-medium">{item.estimatedStock}点</td>
-                      <td className="px-4 py-3 text-right font-bold text-[#345fe1]">
+                      <td className="px-4 py-3 text-right font-bold text-primary">
                         {item.suggestedQty != null ? `${item.suggestedQty}点` : "-"}
                       </td>
                       <td className="px-4 py-3 text-right">
@@ -206,7 +206,7 @@ export function ProcurementList() {
                             onClick={() => handleRemove(item.itemId)}
                             aria-label="削除"
                           >
-                            <Trash2 className="w-4 h-4 text-[#345fe1]" />
+                            <Trash2 className="w-4 h-4 text-primary" />
                           </Button>
                         </div>
                       </td>

@@ -46,8 +46,30 @@ The project is set up for **VS Code Dev Containers** via `.devcontainer/` backed
 
 - `app/layout.tsx` — root layout, sets `lang="ja"`, loads Geist font, wraps Vercel Analytics
 - `app/page.tsx` — renders `<HomeClient />` inside a `<Suspense>` boundary
-- `app/login/page.tsx` — standalone login page (hardcoded demo credentials: `owner@apparel.jp` / `demopass`)
+- `app/login/page.tsx` — standalone login page
 - `app/settings/page.tsx` — standalone settings page (category deadlines, fixed costs, reserves); state is local only
+- `app/(app)/layout.tsx` — 認証チェック＋ロールベースアクセス制御（`canAccess()` で未許可パスを `/design/pop` へリダイレクト）
+- `app/(app)/admin/users/page.tsx` — ユーザー管理画面（admin のみアクセス可）
+- `app/(app)/account/password/page.tsx` — パスワード変更画面（全ロール）
+
+### Role-Based Access Control (RBAC)
+
+ユーザーロールは `UserRole` enum（`admin` / `manager` / `general`）で管理。
+
+| ロール | アクセス権 | 追加権限 |
+|--------|-----------|---------|
+| `admin` | 全ページ | ユーザー作成・削除（`/admin/users`） |
+| `manager` | 全ページ | — |
+| `general` | `/design/*`, `/account/*` のみ | — |
+
+**実装ファイル**:
+- `src/lib/permissions.ts` — `canAccess(role, pathname)`（フロント判定）・`requireRole(allowedRoles)`（Server Action ガード）
+- `app/(app)/layout.tsx` — サーバーサイドでセッション検証＋パスチェック
+- `components/layout/sidebar.tsx` — ロールに応じてナビゲーション項目を表示制御
+- `src/actions/user-actions.ts` — ユーザー作成・削除（admin のみ）
+- `src/services/user-service.ts` — `listUsers` / `createUser` / `deleteUser`
+
+**アクセス制御フロー**: middleware → `app/(app)/layout.tsx`（Server Component）で `canAccess()` → 未許可の場合 `/design/pop` へリダイレクト
 
 ### Single-Page App Pattern (HomeClient)
 
@@ -92,7 +114,7 @@ The authenticated app is effectively a **single-page application routed via URL 
 - **マイグレーション**: `prisma/migrations/` — 初期マイグレーション適用済み。CHECK制約（`reserve_policy.percent`, `finance_schedule.due_day`）は手動追加
 - **DB管理ドキュメント**: `docs/DATABASE.md` — 接続方法、マイグレーション手順、psqlコマンド、トラブルシューティング
 - **設計ドキュメント**: `yamadadocs/UNIFIED_DB_DESIGN.md` — 全テーブルのSQL定義とER図
-- **バックエンド層**: `src/actions/`（Server Actions）, `src/services/`（ビジネスロジック）, `src/lib/`（共通ユーティリティ）はスキャフォールド済み・実装待ち
+- **バックエンド層**: `src/actions/`（Server Actions）, `src/services/`（ビジネスロジック）, `src/lib/`（共通ユーティリティ）— 各ドメイン順次実装中
 
 ## Key Conventions
 

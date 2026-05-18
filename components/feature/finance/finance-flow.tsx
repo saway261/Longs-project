@@ -365,7 +365,7 @@ export function FinanceFlow({ initialTab = "overview" }: FinanceFlowProps) {
       return (
         <div className="bg-white p-3 rounded-lg shadow-lg border border-border">
           <p className="font-medium text-foreground">{payload[0].name}</p>
-          <p className="text-[#345fe1] font-bold">{formatCurrency(payload[0].value)}</p>
+          <p className="text-primary font-bold">{formatCurrency(payload[0].value)}</p>
           {payload[0].payload.percent && <p className="text-muted-foreground text-sm">{payload[0].payload.percent}%</p>}
         </div>
       )
@@ -380,7 +380,7 @@ export function FinanceFlow({ initialTab = "overview" }: FinanceFlowProps) {
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
-              <Wallet className="w-5 h-5 text-[#345fe1]" />
+              <Wallet className="w-5 h-5 text-primary" />
               資産配分
             </CardTitle>
           </CardHeader>
@@ -424,7 +424,7 @@ export function FinanceFlow({ initialTab = "overview" }: FinanceFlowProps) {
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
-              <Settings className="w-5 h-5 text-[#345fe1]" />
+              <Settings className="w-5 h-5 text-primary" />
               内部留保内訳
             </CardTitle>
           </CardHeader>
@@ -455,13 +455,13 @@ export function FinanceFlow({ initialTab = "overview" }: FinanceFlowProps) {
               <div className="p-3 bg-muted/30 rounded-xl text-center">
                 <p className="text-sm text-muted-foreground">内部留保合計</p>
                 <p className="text-xl font-bold text-foreground">{formatCurrency(reserveAmount)}</p>
-                <p className="text-sm text-[#345fe1]">{totalReservePercent}%</p>
+                <p className="text-sm text-primary">{totalReservePercent}%</p>
                 <p className="text-xs text-muted-foreground mt-1">{monthName}</p>
               </div>
-              <div className="p-3 bg-[#345fe1]/10 rounded-xl text-center">
+              <div className="p-3 bg-primary/10 rounded-xl text-center">
                 <p className="text-sm text-muted-foreground">可処分予算</p>
-                <p className="text-xl font-bold text-[#345fe1]">{formatCurrency(disposableBudget)}</p>
-                <p className="text-sm text-[#345fe1]">{100 - totalReservePercent}%</p>
+                <p className="text-xl font-bold text-primary">{formatCurrency(disposableBudget)}</p>
+                <p className="text-sm text-primary">{100 - totalReservePercent}%</p>
                 <p className="text-xs text-muted-foreground mt-1">{monthName}</p>
               </div>
             </div>
@@ -485,9 +485,9 @@ export function FinanceFlow({ initialTab = "overview" }: FinanceFlowProps) {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-            <div className="rounded-xl border border-[#345fe1]/30 bg-[#345fe1]/10 p-4">
+            <div className="rounded-xl border border-primary/30 bg-primary/10 p-4">
               <p className="text-xs text-muted-foreground">当月入金</p>
-              <p className="text-xl font-bold text-[#345fe1]">{formatCurrency(monthlyTotals.income)}</p>
+              <p className="text-xl font-bold text-primary">{formatCurrency(monthlyTotals.income)}</p>
             </div>
             <div className="rounded-xl border border-border p-4">
               <p className="text-xs text-muted-foreground">当月支払い</p>
@@ -497,7 +497,7 @@ export function FinanceFlow({ initialTab = "overview" }: FinanceFlowProps) {
               <p className="text-xs text-muted-foreground">固定費（PL）</p>
               <p className="text-xl font-bold text-amber-600">{formatCurrency(monthlyTotals.fixed)}</p>
             </div>
-            <div className="rounded-xl border border-[#345fe1]/30 bg-linear-to-br from-[#345fe1] to-[#2a4bb3] p-4 text-white">
+            <div className="rounded-xl border border-primary/30 bg-linear-to-br from-primary to-primary/80 p-4 text-white">
               <p className="text-xs text-white/80">当月差引</p>
               <p className="text-xl font-bold">{formatCurrency(monthlyTotals.income - monthlyTotals.expense)}</p>
             </div>
@@ -527,7 +527,7 @@ export function FinanceFlow({ initialTab = "overview" }: FinanceFlowProps) {
                     <p className="text-sm text-muted-foreground">{cat.description}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-2xl font-bold text-[#345fe1]">{reserveSettings[cat.id] ?? cat.percent}%</p>
+                    <p className="text-2xl font-bold text-primary">{reserveSettings[cat.id] ?? cat.percent}%</p>
                     <p className="text-sm text-muted-foreground">
                       {formatCurrency(Math.round(totalAssets * ((reserveSettings[cat.id] ?? cat.percent) / 100)))}
                     </p>
@@ -539,7 +539,7 @@ export function FinanceFlow({ initialTab = "overview" }: FinanceFlowProps) {
                     onValueChange={(value: number[]) => updateReserveSetting(cat.id, value[0])}
                     max={30}
                     step={1}
-                    className="flex-1 [&_[data-slot=slider-track]]:bg-[#345fe1]/15 [&_[data-slot=slider-range]]:bg-[#345fe1] [&_[data-slot=slider-thumb]]:border-[#345fe1] [&_[data-slot=slider-thumb]]:focus-visible:ring-[#345fe1]/30 [&_[data-slot=slider-thumb]]:hover:ring-[#345fe1]/20"
+                    className="flex-1 [&_[data-slot=slider-track]]:bg-primary/15 [&_[data-slot=slider-range]]:bg-primary [&_[data-slot=slider-thumb]]:border-primary [&_[data-slot=slider-thumb]]:focus-visible:ring-primary/30 [&_[data-slot=slider-thumb]]:hover:ring-primary/20"
                   />
                   <Input
                     type="number"
@@ -568,7 +568,7 @@ export function FinanceFlow({ initialTab = "overview" }: FinanceFlowProps) {
                     key={cat.id}
                     className={cn(
                       "h-full",
-                      index === 0 && "bg-[#345fe1]",
+                      index === 0 && "bg-primary",
                       index === 1 && "bg-[#22c55e]",
                       index === 2 && "bg-[#f97316]",
                       index === 3 && "bg-[#a855f7]",
@@ -583,7 +583,7 @@ export function FinanceFlow({ initialTab = "overview" }: FinanceFlowProps) {
                     <div
                       className={cn(
                         "w-3 h-3 rounded",
-                        index === 0 && "bg-[#345fe1]",
+                        index === 0 && "bg-primary",
                         index === 1 && "bg-[#22c55e]",
                         index === 2 && "bg-[#f97316]",
                         index === 3 && "bg-[#a855f7]",
@@ -648,7 +648,7 @@ export function FinanceFlow({ initialTab = "overview" }: FinanceFlowProps) {
     const monthlyLegend = (
       <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded bg-[#345fe1]" />
+          <div className="w-4 h-4 rounded bg-primary" />
           <span>入金</span>
         </div>
         <div className="flex items-center gap-2">
@@ -738,10 +738,10 @@ export function FinanceFlow({ initialTab = "overview" }: FinanceFlowProps) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <Card className="bg-[#345fe1]/10 border-none">
+          <Card className="bg-primary/10 border-none">
             <CardContent className="pt-4">
               <p className="text-xs text-muted-foreground">当月入金（売掛）</p>
-              <p className="text-xl font-bold text-[#345fe1]">{formatCurrency(monthlyTotals.income)}</p>
+              <p className="text-xl font-bold text-primary">{formatCurrency(monthlyTotals.income)}</p>
             </CardContent>
           </Card>
           <Card>
@@ -756,7 +756,7 @@ export function FinanceFlow({ initialTab = "overview" }: FinanceFlowProps) {
               <p className="text-xl font-bold text-amber-600">{formatCurrency(monthlyTotals.fixed)}</p>
             </CardContent>
           </Card>
-          <Card className="bg-linear-to-br from-[#345fe1] to-[#2a4bb3] text-white">
+          <Card className="bg-linear-to-br from-primary to-primary/80 text-white">
             <CardContent className="pt-4">
               <p className="text-xs text-white/80">当月差引</p>
               <p className="text-xl font-bold">{formatCurrency(monthlyTotals.income - monthlyTotals.expense)}</p>
@@ -780,7 +780,7 @@ export function FinanceFlow({ initialTab = "overview" }: FinanceFlowProps) {
                 row.type === "checkpoint" ? (
                   <tr
                     key={`checkpoint-${row.checkpoint.label}-${index}`}
-                    className="bg-[#345fe1]/5 border-t border-[#345fe1]/20"
+                    className="bg-primary/5 border-t border-primary/20"
                   >
                     <td colSpan={5} className="py-2 px-4 text-xs">
                       <div className="flex items-center justify-between">
@@ -788,7 +788,7 @@ export function FinanceFlow({ initialTab = "overview" }: FinanceFlowProps) {
                         <span
                           className={cn(
                             "font-semibold",
-                            row.checkpoint.total >= 0 ? "text-[#345fe1]" : "text-red-600",
+                            row.checkpoint.total >= 0 ? "text-primary" : "text-red-600",
                           )}
                         >
                           {formatCurrency(row.checkpoint.total)}
@@ -819,7 +819,7 @@ export function FinanceFlow({ initialTab = "overview" }: FinanceFlowProps) {
                         className={cn(
                           "text-xs font-medium",
                           row.event.type === "income"
-                            ? "text-[#345fe1]"
+                            ? "text-primary"
                             : row.event.category.includes("固定")
                               ? "text-amber-700"
                               : "text-red-600",
@@ -832,7 +832,7 @@ export function FinanceFlow({ initialTab = "overview" }: FinanceFlowProps) {
                       className={cn(
                         "py-3 px-4 text-right font-semibold",
                         row.event.type === "income"
-                          ? "text-[#345fe1]"
+                          ? "text-primary"
                           : row.event.category.includes("固定")
                             ? "text-amber-700"
                             : "text-red-600",
@@ -872,10 +872,10 @@ export function FinanceFlow({ initialTab = "overview" }: FinanceFlowProps) {
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <Card className="bg-[#345fe1]/10 border-none">
+          <Card className="bg-primary/10 border-none">
             <CardContent className="pt-4">
               <p className="text-xs text-muted-foreground">年間入金予定</p>
-              <p className="text-xl font-bold text-[#345fe1]">{formatCurrency(yearlyTotals.income)}</p>
+              <p className="text-xl font-bold text-primary">{formatCurrency(yearlyTotals.income)}</p>
             </CardContent>
           </Card>
           <Card>
@@ -890,7 +890,7 @@ export function FinanceFlow({ initialTab = "overview" }: FinanceFlowProps) {
               <p className="text-xl font-bold text-amber-600">{formatCurrency(yearlyTotals.fixed)}</p>
             </CardContent>
           </Card>
-          <Card className="bg-linear-to-br from-[#345fe1] to-[#2a4bb3] text-white">
+          <Card className="bg-linear-to-br from-primary to-primary/80 text-white">
             <CardContent className="pt-4">
               <p className="text-xs text-white/80">年間差引</p>
               <p className="text-xl font-bold">{formatCurrency(yearlyTotals.income - yearlyTotals.expense)}</p>
@@ -906,7 +906,7 @@ export function FinanceFlow({ initialTab = "overview" }: FinanceFlowProps) {
                 <span>{formatCurrency(item.net)}</span>
               </div>
               <div className="mt-2 text-[11px] space-y-1">
-                <div className="flex items-center justify-between text-[#345fe1]">
+                <div className="flex items-center justify-between text-primary">
                   <span>入金</span>
                   <span className="font-semibold">{formatCurrency(item.income)}</span>
                 </div>
@@ -948,7 +948,7 @@ export function FinanceFlow({ initialTab = "overview" }: FinanceFlowProps) {
                 {Array.from({ length: 12 }, (_, month) => {
                   const data = row.monthData.get(month)
                   const colorClass =
-                    row.type === "income" ? "bg-[#345fe1]" : row.category.includes("固定") ? "bg-amber-500" : "bg-red-500"
+                    row.type === "income" ? "bg-primary" : row.category.includes("固定") ? "bg-amber-500" : "bg-red-500"
                   return (
                     <button
                       key={`${row.key}-${month}`}
@@ -979,7 +979,7 @@ export function FinanceFlow({ initialTab = "overview" }: FinanceFlowProps) {
 
         <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-[#345fe1]" />
+            <div className="w-4 h-4 rounded bg-primary" />
             <span>入金サイト</span>
           </div>
           <div className="flex items-center gap-2">
@@ -1013,7 +1013,7 @@ export function FinanceFlow({ initialTab = "overview" }: FinanceFlowProps) {
                   onClick={() => setGanttMode("monthly")}
                   className={cn(
                     ganttMode === "monthly"
-                      ? "bg-[#345fe1] text-white border-[#345fe1]"
+                      ? "bg-primary text-white border-primary"
                       : "bg-white text-muted-foreground",
                   )}
                 >
@@ -1024,7 +1024,7 @@ export function FinanceFlow({ initialTab = "overview" }: FinanceFlowProps) {
                   onClick={() => setGanttMode("yearly")}
                   className={cn(
                     ganttMode === "yearly"
-                      ? "bg-[#345fe1] text-white border-[#345fe1]"
+                      ? "bg-primary text-white border-primary"
                       : "bg-white text-muted-foreground",
                   )}
                 >
@@ -1073,7 +1073,7 @@ export function FinanceFlow({ initialTab = "overview" }: FinanceFlowProps) {
                       className={cn(
                         "text-lg font-bold",
                         selectedEvent.type === "income"
-                          ? "text-[#345fe1]"
+                          ? "text-primary"
                           : selectedEvent.category.includes("固定")
                             ? "text-amber-700"
                             : "text-red-600",
@@ -1139,7 +1139,7 @@ export function FinanceFlow({ initialTab = "overview" }: FinanceFlowProps) {
                   </SelectContent>
                 </Select>
               </div>
-              <Button onClick={() => setShowSalesModal(false)} className="w-full bg-[#345fe1] hover:bg-[#2a4bb3] text-white">
+              <Button onClick={() => setShowSalesModal(false)} className="w-full bg-primary hover:bg-primary/80 text-white">
                 保存（ダミー）
               </Button>
             </div>
@@ -1165,7 +1165,7 @@ export function FinanceFlow({ initialTab = "overview" }: FinanceFlowProps) {
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 flex items-center justify-center">
-                  <Wallet className="w-6 h-6 text-[#345fe1]" />
+                  <Wallet className="w-6 h-6 text-primary" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
@@ -1182,7 +1182,7 @@ export function FinanceFlow({ initialTab = "overview" }: FinanceFlowProps) {
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 flex items-center justify-center">
-                  <Settings className="w-6 h-6 text-[#345fe1]" />
+                  <Settings className="w-6 h-6 text-primary" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
@@ -1190,13 +1190,13 @@ export function FinanceFlow({ initialTab = "overview" }: FinanceFlowProps) {
                     <span className="text-xs text-muted-foreground">{monthName}</span>
                   </div>
                   <p className="text-2xl font-bold text-foreground">{formatCurrency(reserveAmount)}</p>
-                  <p className="text-sm text-[#345fe1]">{totalReservePercent}%</p>
+                  <p className="text-sm text-primary">{totalReservePercent}%</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-linear-to-br from-[#345fe1] to-[#2a4bb3] text-white">
+          <Card className="bg-linear-to-br from-primary to-primary/80 text-white">
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 flex items-center justify-center">
@@ -1225,7 +1225,7 @@ export function FinanceFlow({ initialTab = "overview" }: FinanceFlowProps) {
                   <CardTitle className="text-sm text-muted-foreground">{summary.title}</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0 flex items-center gap-3">
-                  <Icon className="w-10 h-10 text-[#345fe1]" />
+                  <Icon className="w-10 h-10 text-primary" />
                   <div>
                     <p className="font-semibold text-lg">{formatCurrency(summary.value)}</p>
                     <p className="text-xs text-muted-foreground">{summary.description}</p>

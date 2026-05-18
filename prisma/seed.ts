@@ -156,6 +156,11 @@ async function main() {
     create: { email: "owner@apparel.jp", name: "オーナー", passwordHash, role: UserRole.admin },
   })
   await prisma.userAccount.upsert({
+    where: { email: "manager@apparel.jp" },
+    update: {},
+    create: { email: "manager@apparel.jp", name: "マネージャー", passwordHash: await bcrypt.hash("demopass", 10), role: UserRole.manager },
+  })
+  await prisma.userAccount.upsert({
     where: { email: "testuser@apparel.jp" },
     update: {},
     create: { email: "testuser@apparel.jp", name: "テストユーザー", passwordHash: await bcrypt.hash("testpass", 10), role: UserRole.general },
@@ -786,6 +791,168 @@ async function main() {
     ],
   })
   console.log(`✓ InventoryPlanYear & InventoryPlanMonth (2年度 × 12ヶ月)`)
+
+  // ── NewsQuery ─────────────────────────────────────────────────────────────────
+  // 第１世代のみ（全7件・全アクティブ）
+  await prisma.newsQuery.createMany({
+    data: [
+      // ── 原材料グループ (queryGroupId: dbf375ce) ─────────────────────────────
+      {
+        id:           "d89cf957-e977-45f5-ae16-f811a57915ad",
+        queryGroupId: "dbf375ce-128d-428c-9414-e5854f6922d0",
+        name:         "原材料",
+        keywords:     "綿,繊維,羊毛,ウール,合皮,合成皮革",
+        keywordMode:  "OR",
+        notKeywords:  "コラム",
+        searchField:  "qInTitle",
+        language:     "ja",
+        sources:      null,
+        sourceMode:   null,
+        domains:      "newsdata.io",
+        categoryMode: "include",
+        categories:   "business,politics,world,environment",
+        sortBy:       "publishedAt",
+        isActive:     true,
+        createdAt:    new Date("2026-05-14T11:05:54.549+09:00"),
+        deactivatedAt: null,
+      },
+      // ── 気候・気象グループ (queryGroupId: 4c4a859c) ──────────────────────────
+      {
+        id:           "c34cc409-8a6a-4276-b77d-764505f0c956",
+        queryGroupId: "4c4a859c-ccad-4046-a119-95e030ebcec7",
+        name:         "気候・気象",
+        keywords:     "天気,気温,降雨,降水,積雪,前線,気候",
+        keywordMode:  "OR",
+        notKeywords:  "地震,津波,災害",
+        searchField:  "qInTitle",
+        language:     "ja",
+        sources:      "news.ntv.co.jp,fnn.jp",
+        sourceMode:   "include",
+        domains:      "newsdata.io",
+        categoryMode: null,
+        categories:   null,
+        sortBy:       "publishedAt",
+        isActive:     true,
+        createdAt:    new Date("2026-05-14T11:22:29.068+09:00"),
+        deactivatedAt: null,
+      },
+      // ── 物流・運送グループ (queryGroupId: 513187c2) ─────────────────────────
+      {
+        id:           "e5cd9959-09b5-4953-a7fe-6fb3073b0e1d",
+        queryGroupId: "513187c2-a4a6-4679-9d26-71e756c59957",
+        name:         "物流・運送",
+        keywords:     "物流,運輸,運送",
+        keywordMode:  "OR",
+        notKeywords:  null,
+        searchField:  "qInTitle",
+        language:     "ja",
+        sources:      null,
+        sourceMode:   null,
+        domains:      "newsdata.io",
+        categoryMode: "include",
+        categories:   "business,politics,world,domestic,breaking",
+        sortBy:       "publishedAt",
+        isActive:     true,
+        createdAt:    new Date("2026-05-14T11:28:37.270+09:00"),
+        deactivatedAt: null,
+      },
+      // ── 為替グループ (queryGroupId: ef58da79) ───────────────────────────────
+      {
+        id:           "48af50a1-67ba-47bd-83e2-4cc1703282d0",
+        queryGroupId: "ef58da79-fc1e-4ed0-b2e6-d6da1a305e6f",
+        name:         "為替",
+        keywords:     "為替,円高,円安,ドル高,ドル安,円相場",
+        keywordMode:  "OR",
+        notKeywords:  null,
+        searchField:  "qInTitle",
+        language:     "ja",
+        sources:      "nhk.or.jp,jiji.com,kyodo.co.jp,jp.reuters.com",
+        sourceMode:   "include",
+        domains:      "newsdata.io",
+        categoryMode: null,
+        categories:   null,
+        sortBy:       "publishedAt",
+        isActive:     true,
+        createdAt:    new Date("2026-05-14T11:56:17.204+09:00"),
+        deactivatedAt: null,
+      },
+      // ── ファッショントレンドグループ (queryGroupId: cde63e1a) ─────────────────
+      {
+        id:           "3b91b657-1287-466a-9a8a-909161dc15a5",
+        queryGroupId: "cde63e1a-29f5-4c51-b392-75f5cc568d65",
+        name:         "ファッショントレンド",
+        keywords:     "ファッション,アパレル,ブランド,若者",
+        keywordMode:  "OR",
+        notKeywords:  null,
+        searchField:  "qInMeta",
+        language:     "ja",
+        sources:      "mdpr.jp,mastered.jp,buzzfeed.com,hypebeast.com",
+        sourceMode:   "include",
+        domains:      "newsdata.io",
+        categoryMode: "exclude",
+        categories:   null,
+        sortBy:       "publishedAt",
+        isActive:     true,
+        createdAt:    new Date("2026-05-14T14:03:50.177+09:00"),
+        deactivatedAt: null,
+      },
+      // ── 同業他社・プレスリリースグループ (queryGroupId: 4932502e) ─────────────
+      {
+        id:           "30060d6a-c2c1-451f-9cce-30ec57a8308a",
+        queryGroupId: "4932502e-941f-4765-9bd9-a8db9fb6a775",
+        name:         "同業他社・プレスリリース",
+        keywords:     null,
+        keywordMode:  "AND",
+        notKeywords:  null,
+        searchField:  "qInMeta",
+        language:     "ja",
+        sources:      null,
+        sourceMode:   null,
+        domains:      "fashionsnap.com",
+        categoryMode: null,
+        categories:   null,
+        sortBy:       "publishedAt",
+        isActive:     true,
+        createdAt:    new Date("2026-05-15T09:28:12.479+09:00"),
+        deactivatedAt: null,
+      },
+      // ── 天気のみグループ (queryGroupId: fe3f4acd) ───────────────────────────
+      {
+        id:           "fe3f4acd-8d43-4b7e-9380-2a9c73ad4f69",
+        queryGroupId: "fe3f4acd-8d43-4b7e-9380-2a9c73ad4f69",
+        name:         "天気のみ",
+        keywords:     null,
+        keywordMode:  "AND",
+        notKeywords:  null,
+        searchField:  "qInMeta",
+        language:     "ja",
+        sources:      null,
+        sourceMode:   null,
+        domains:      "気象庁",
+        categoryMode: null,
+        categories:   null,
+        sortBy:       "publishedAt",
+        isActive:     true,
+        createdAt:    new Date("2026-05-15T09:28:44.850+09:00"),
+        deactivatedAt: null,
+      },
+    ],
+    skipDuplicates: true,
+  })
+  console.log("✓ NewsQuery (7件: 7グループ・全アクティブ・第１世代のみ)")
+
+  // ── SystemSetting（デフォルト除外ソース） ─────────────────────────────────────
+  await prisma.systemSetting.upsert({
+    where: { key: "news.default_excluded_sources" },
+    update: {
+      value: "bloomberg.com,topics.smt.docomo.ne.jp,bunkanews.jp,jp.investing.com,topics.or.jp,news.google.com,prtimes.jp,news.yahoo.co.jp",
+    },
+    create: {
+      key: "news.default_excluded_sources",
+      value: "bloomberg.com,topics.smt.docomo.ne.jp,bunkanews.jp,jp.investing.com,topics.or.jp,news.google.com,prtimes.jp,news.yahoo.co.jp",
+    },
+  })
+  console.log("✓ SystemSetting (news.default_excluded_sources)")
 
   console.log("\n🎉 Seed complete!")
 }
