@@ -1,14 +1,14 @@
 "use client"
 
-import { useMemo, useState } from "react"
-import { Bot, FileText, Loader2, AlertCircle } from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
+import { Bot, FileText, Loader2, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 import { PageHeader } from "@/components/feature/page-header"
-import { generateManagementReportAction } from "@/src/actions/advice-actions"
+import { generateManagementReportAction, getManagementReportsAction } from "@/src/actions/advice-actions"
 import type { ManagementReportDTO } from "@/src/actions/advice-actions"
 import type { GroupPeriodRanges } from "@/src/types/report"
 
@@ -90,7 +90,28 @@ export function AIAdviceManagementReport() {
 
   const [isGenerating, setIsGenerating] = useState(false)
   const [reportError, setReportError] = useState<string | null>(null)
-  const [reportData, setReportData] = useState<ManagementReportDTO | null>(null)
+  const [reportHistory, setReportHistory] = useState<ManagementReportDTO[]>([])
+  const [selectedReportId, setSelectedReportId] = useState<string | null>(null)
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true)
+
+  const reportData = reportHistory.find((r) => r.id === selectedReportId) ?? null
+
+  useEffect(() => {
+    async function loadHistory() {
+      setIsLoadingHistory(true)
+      try {
+        const result = await getManagementReportsAction()
+        if (result.success && result.data.length > 0) {
+          const done = result.data.filter((r) => r.status === "done")
+          setReportHistory(done)
+          setSelectedReportId(done[0]?.id ?? null)
+        }
+      } finally {
+        setIsLoadingHistory(false)
+      }
+    }
+    loadHistory()
+  }, [])
 
   const groupedSources = useMemo(
     () => ({
@@ -104,6 +125,8 @@ export function AIAdviceManagementReport() {
 
   const reportLens = reportLenses.find((l) => l.id === (reportData?.lensId ?? selectedLensId)) ?? reportLenses[0]
 
+  const selectedIndex = reportHistory.findIndex((r) => r.id === selectedReportId)
+
   async function handleGenerate() {
     setIsGenerating(true)
     setReportError(null)
@@ -115,7 +138,8 @@ export function AIAdviceManagementReport() {
         periodRanges,
       })
       if (result.success) {
-        setReportData(result.data)
+        setReportHistory((prev) => [result.data, ...prev])
+        setSelectedReportId(result.data.id)
       } else {
         setReportError(result.error)
       }
@@ -310,7 +334,9 @@ export function AIAdviceManagementReport() {
               <p className="text-sm text-muted-foreground mt-1">
                 {reportData
                   ? `レポート視点: ${reportLens.label} / 生成日時: ${reportData.generatedAt ? new Date(reportData.generatedAt).toLocaleString("ja-JP") : "-"}`
-                  : "レポートを生成すると結果がここに表示されます"}
+                  : isLoadingHistory
+                    ? "過去のレポートを読み込んでいます..."
+                    : "レポートを生成すると結果がここに表示されます"}
               </p>
             </div>
             {reportData && (
@@ -322,6 +348,55 @@ export function AIAdviceManagementReport() {
               </div>
             )}
           </div>
+
+          {reportHistory.length > 0 && (
+            <div className="flex items-center gap-2 pt-2 border-t border-border/40 mt-3">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                disabled={selectedIndex <= 0}
+                onClick={() => setSelectedReportId(reportHistory[selectedIndex - 1]?.id ?? null)}
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <div className="flex-1 flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
+                {reportHistory.map((r, i) => (
+                  <button
+                    key={r.id}
+                    type="button"
+                    onClick={() => setSelectedReportId(r.id)}
+                    className={cn(
+                      "shrink-0 rounded-lg border px-2.5 py-1 text-xs transition-all whitespace-nowrap",
+                      r.id === selectedReportId
+                        ? "border-primary bg-primary/10 text-primary font-semibold"
+                        : "border-border/60 text-muted-foreground hover:border-primary/40 hover:text-foreground",
+                    )}
+                  >
+                    {i === 0 && <span className="mr-1 text-primary">最新</span>}
+                    {r.generatedAt
+                      ? new Date(r.generatedAt).toLocaleString("ja-JP", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })
+                      : new Date(r.createdAt).toLocaleString("ja-JP", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                    &nbsp;{reportLenses.find((l) => l.id === r.lensId)?.label ?? r.lensId}
+                  </button>
+                ))}
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                disabled={selectedIndex >= reportHistory.length - 1}
+                onClick={() => setSelectedReportId(reportHistory[selectedIndex + 1]?.id ?? null)}
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+              <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
+                {selectedIndex + 1} / {reportHistory.length}
+              </span>
+            </div>
+          )}
         </CardHeader>
         <CardContent className="pt-6">
           {isGenerating && (
@@ -342,7 +417,14 @@ export function AIAdviceManagementReport() {
             </div>
           )}
 
-          {!isGenerating && !reportError && !reportData && (
+          {!isGenerating && !reportError && !reportData && isLoadingHistory && (
+            <div className="flex flex-col items-center justify-center py-16 gap-4 text-muted-foreground">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              <p className="text-sm">過去のレポートを読み込んでいます...</p>
+            </div>
+          )}
+
+          {!isGenerating && !reportError && !reportData && !isLoadingHistory && (
             <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
               <FileText className="w-10 h-10 opacity-30" />
               <p className="text-sm">条件を設定して「AIレポートを作成」を押してください</p>
